@@ -1,0 +1,139 @@
+---
+title: "Make or source"
+sidebarTitle: "Make or source"
+description: "Component-level make-or-open-source analysis and the resulting decisions."
+icon: "git-compare-arrows"
+---
+
+| **Series** | NXT Core Platform Program |
+|------------|---------------------------|
+| **Owner**  | Dr. Matthias Lange        |
+| **Date**   | 11 June 2026              |
+| **Status** | V1.1 - For decision       |
+| **Review** | 1 September 2026          |
+
+## 1. The decision framework
+
+To build NXT Core efficiently, we want to apply a clear build & source framework. This memo outlines the principles for deciding and proposes the direction to take for each NXT Core Component.
+
+Three rules, applied in order:
+
+**Rule 1 — Own the guarantees, adopt the substrate.** Everything that carries a positioning sentence — the audit semantics, policy fusion, autonomy mechanics, evaluation governance, playbook format, contracts — is made, without exception. Everything beneath it that is undifferentiated infrastructure is adopted. The test per component: *if we adopted this, could a competitor with the same OSS stack reproduce our claim?* If yes for the semantics, we build the semantics.
+
+**Rule 2 — License class first, features second.** Every instance ships into a customer perimeter, so the license question is a deal question. Market analysis of the gateway segment makes the general point well: open-source AI infrastructure now falls into distinct license classes — Apache 2.0 and MIT permissive, AGPL copyleft with network clauses, and open-core with gated enterprise features — and treating them as interchangeable is the most common procurement mistake. Our classes: **green** (Apache 2.0, MIT, BSD, MPL — adopt freely), **amber** (AGPL — only as unmodified, network-separated services, with attorney sign-off per case), **red** (BUSL/SSPL and "open-core where the features we need are gated" — treat as commercial vendors, which usually means avoid).
+
+**Rule 3 — Acquisition and abandonment risk priced in.** The segment is consolidating (Langfuse→ClickHouse is our own substrate's example). For every adoption: prefer foundation-governed or multi-vendor projects; require a credible fork-or-replace path behind our own interface; never let an OSS project's API leak through a kernel contract.
+
+## 2. The Kernel, component by component
+
+### 2.1 Model Access
+
+**Make: the governance shell across both backends — EU-routing policy, model-tier resolution, version pinning, cost and latency capture to the causing execution, the rule that no application code reaches a model or backend directly.**
+
+**Adopt (substrate): an OSS gateway/proxy underneath. Candidates: LiteLLM (MIT; the broadest provider catalog, Python — with a known performance ceiling under high concurrency), Bifrost (Apache 2.0; Go; very low overhead, MCP-native, governance features — but young, and the comparative content around it is largely vendor-authored, so claims deserve independent verification), Envoy AI Gateway (Apache 2.0; Kubernetes-native; early-stage feature gaps). Adopt (ML backend): a model-serving runtime for NXT-trained models such as rankers and classifiers — BentoML (Apache 2.0; Python-native, simplest fit), KServe (Apache 2.0; Kubernetes-native, heavier), or Ray Serve (Apache 2.0; strong at scale, more operational surface). All green-licensed.**
+
+**Decision: LiteLLM now — per-instance traffic in our deployments is nowhere near its ceiling, the team is Python-native, and MIT is clean. Re-evaluate Bifrost at two triggers: when an instance's sustained load makes Python latency visible, or when we want a governed MCP gateway as a platform feature. The kernel's gateway interface stays ours, so the swap is contained by design. BentoML for serving — Python-native, Apache, lightest per-instance footprint; revisit KServe only if GPU-fleet scheduling across instances becomes real. The governance wrapper is identical for both backends, so an ML inference is recorded and evaluated exactly like an LLM call.**
+
+### 2.2 Skill Runtime
+
+**Make:** entirely — the bounded multi-step executor, autonomy envelopes, per-step execution recording, the ladder discipline. This is the component where "governed" becomes mechanical; adopting an agent framework here would put our flagship claim on someone else's roadmap.
+
+**Adopt (beneath, as libraries only):** agent-pattern libraries (LangGraph-class, Pydantic-AI-class) may be used *inside* skill implementations as implementation details — never as the runtime's public model, never imported above the kernel. **Adopt as protocol:** **MCP** for tool definitions where it fits — it is becoming the industry's tool-interface standard, and speaking it makes customer-side integrations cheaper. Tools remain registered kernel capabilities regardless of protocol.
+
+### 2.3 AI Memory
+
+**Make:** context assembly with recorded manifests (the "what did the model see" answer — pure IP), knowledge governance (versioning, eval-gated activation), evidence semantics (content addressing, provenance, retention).
+
+**Adopt:** **pgvector** (PostgreSQL license) for retrieval — no second stateful system per customer instance; revisit only if a deployment's corpus scale forces it (then Qdrant, Apache 2.0). **Docling** (MIT) and unstructured-class parsers (Apache 2.0) for document parsing beneath our provenance layer. Object storage: **the customer's S3-compatible store as default**; bundled fallback **SeaweedFS or Garage** (Apache 2.0) — replacing the MinIO default (AGPL: amber at best inside customer perimeters; attorney review already commissioned).
+
+### 2.4 AI Auditor
+
+**Make:** entirely. Hash-chained ledger, journey reconstruction, export bundles, chain verification. This is the single most positioning-critical component and also the simplest to own: Postgres append-only tables plus disciplined domain code. Specialized immutable databases (immudb-class) add operational exotica to every customer instance for marginal gain — rejected.
+
+**Adopt as convention:** **OpenTelemetry GenAI semantic conventions** for the telemetry representation of AI events — so our evidence is exportable in the vocabulary the industry's tooling is standardizing on, which strengthens, not weakens, the attestability story.
+
+### 2.5 Evaluation Engine
+
+**Make:** the governance — golden-set ownership and change control, release gates with thresholds living inside playbook artifacts, the binding of evidence to the Autonomy Controller, CI integration semantics.
+
+**Adopt (substrate):** **Langfuse** self-hosted (chosen; core MIT) for tracing, datasets, and eval runs — with the ClickHouse acquisition on the risk register: watch license and self-host posture per release; our exposure is contained because only the kernel's evaluation interface touches it. Fallback path identified: **Arize Phoenix** (Apache 2.0) plus **promptfoo** (MIT) for CI-side checks. Both fallbacks speak OpenTelemetry, which is the real lock-in protection.
+
+### 2.6 Learning Engine
+
+**Make:** the loop — signal capture as executions, curation into dataset candidates, change proposals, eval-gated release. This is the run-service in code form; it is never adopted.
+
+**Adopt (substrate):** **Argilla** (Apache 2.0) as the human curation/labeling surface behind the loop where structured review of signals at volume is needed — instead of building annotation UX ourselves; it feeds datasets, our governance decides what becomes golden.
+
+### 2.7 Policy Gate
+
+**Make:** entirely. The fusion of policy evaluation with audit recording and autonomy state is the product; standalone engines (OPA, Cedar — both excellent, both rejected) would split the semantics across two systems and two audit stories. Expression evaluation may use small green-licensed libraries internally; the policy model, versioning, gates, and SoD are ours.
+
+### 2.8 Autonomy Controller
+
+**Make:** entirely, no substrate question. Pure differentiating IP; there is nothing on the market to adopt — which is precisely the point of Memo 11.
+
+### 2.9 Integration Fabric
+
+**Make:** the connector contract (freshness semantics, staleness→exception, idempotent handoffs, safe degradation) and every connector's governance wrapper.
+
+**Adopt (per connector, as libraries):** protocol clients — IMAP/Graph/Gmail SDKs, database drivers, ERP client libraries — all green-licensed, all beneath the contract. **Rejected:** ELT/connector frameworks (Airbyte-class): wrong abstraction (bulk sync vs. governed, freshness-contracted reads), heavy operational footprint per customer instance, and license drift in that segment.
+
+### 2.10 Platform Core
+
+**Adopt-heavy by design — this is the substrate layer:**
+
+- **Identity:** **Keycloak** (Apache 2.0, CNCF-adjacent maturity, the name bank IT already knows) over Authentik — chosen for enterprise-federation track record and audit familiarity. Make: nothing beyond configuration and our RBAC model on top.
+
+- **Secrets:** **External Secrets Operator + SOPS** (Apache/MPL — green). If a full secrets manager is demanded by a customer: **OpenBao** (MPL, the Vault fork) — **not Vault** (BUSL: red class).
+
+- **Runtime/ops:** Kubernetes, Helm, Prometheus — green. **Grafana is AGPL**: acceptable as an unmodified, separately deployed service (amber, attorney-confirmed pattern), with **Perses or VictoriaMetrics stack** (Apache 2.0) as the prepared alternative for license-strict customers. Metrics forwarding into customer monitoring uses OpenTelemetry regardless.
+
+- **Data:** PostgreSQL, Redis, Flyway — green, settled.
+
+## 3. The AI Suites
+
+**Platform API:** FastAPI (MIT) + OpenAPI 3.1; SDKs generated with green-licensed OpenAPI tooling, ergonomics handwritten. Make: the contract design; adopt: everything mechanical.
+
+**The surfaces (NXT Workspace, Cockpit, Admin):** React/Vite/Radix/Tailwind — all green; the surfaces themselves are product, made.
+
+**Way 1 — Agent Case Framework, Case Domain Memory, Case Execution Library:** **make** — this is where ways-of-working IP lives. The standing Temporal question gets its final form here: Temporal is MIT (green) and genuinely strong durable-execution plumbing; we still do not adopt it now, because our case orchestration is working production code and the framework's semantics (human checkpoints, exceptions, policy gates) are product, not plumbing. Re-evaluate only if post-ARZ orchestration complexity produces real reliability pain — and then as an internal engine beneath the framework, never as its model.
+
+**Way 2 — Component Registry, Component Memory, Service Contract:** **make** (contracts are IP). **Metering:** start with our own Postgres-based counters (billing-grade is a discipline, not a product, at our volume); adopt **OpenMeter** (Apache 2.0) as the substrate when usage-based billing complexity actually arrives. **Avoid Lago** for now (AGPL: amber, and we don't need invoicing inside customer perimeters).
+
+## 4. Standards we adopt (cheaper than software, stronger than features)
+
+**MCP** (tool interface), **OpenTelemetry + GenAI semantic conventions** (all telemetry and AI-event vocabulary), **OpenAPI 3.1** (the Platform API), **OIDC/SAML** (identity), **Kubernetes Gateway API** (ingress posture), **SPDX/SBOM + Sigstore** (supply chain — every release signed, every instance's stack scannable by customer security). Standards adoption is the quiet half of the attestability story: our evidence and our interfaces speak vocabularies the customer's auditors and tools already understand.
+
+## 5. Summary table
+
+| **Component** | **Make (the IP)** | **Open source (the substrate)** | **License class** |
+|----|----|----|----|
+| Model Access — LLM backend | Routing policy, version/cost capture, governance shell | LiteLLM now; Bifrost / Envoy AI GW on watchlist | MIT / Apache |
+| Model Access — ML backend | Identical governance wrapper; ML inference = Execution | BentoML now; KServe / Ray Serve if scale demands | Apache |
+| Skill Runtime | Executor, envelopes, recording | Agent libs as internals only; MCP protocol | green |
+| AI Memory | Context manifests, knowledge governance, evidence semantics | pgvector, Docling, unstructured; customer S3, SeaweedFS fallback | green (MinIO out) |
+| AI Auditor | Everything | Postgres; OTel GenAI conventions | green |
+| Evaluation Engine | Golden-set governance, release gates, evidence binding | Langfuse (watch ClickHouse); Phoenix+promptfoo fallback | MIT / Apache |
+| Learning Engine | The loop | Argilla for curation UX | Apache |
+| Policy Gate | Everything | expression libs internally | green |
+| Autonomy Controller | Everything | — | — |
+| Integration Fabric | Contract + governance wrappers | protocol clients; no Airbyte-class | green |
+| Platform Core | RBAC model, config | Keycloak, ESO+SOPS, OpenBao (not Vault), Prometheus, Grafana (amber, Perses ready), Postgres/Redis/Flyway | green/amber |
+| Platform API & SDKs | Contract design | FastAPI, OpenAPI codegen | MIT |
+| Surfaces | Product | React stack | MIT |
+| Way 1 framework & library | Everything | (Temporal: rejected for now, MIT, re-evaluate trigger defined) | — |
+| Way 2 registry/contract/metering | Contracts, registry | OpenMeter later; not Lago | Apache |
+
+## 6. Risk register & standing rules
+
+- 1\. **Langfuse/ClickHouse** — substrate of the Evaluation Engine post-acquisition: monitor license and self-host posture per release; Phoenix migration path kept warm. (Owner: platform engineering, per release.)
+
+- 2\. **MinIO AGPL** — exit decided: customer S3 default, SeaweedFS bundled fallback; migration scheduled with the BYO work. (Attorney sign-off in progress.)
+
+- 3\. **Grafana AGPL** — amber pattern documented for the operating annex; Perses alternative validated before the first license-strict customer asks.
+
+- 4\. **Vendor-authored benchmarks** — the gateway segment's comparative content is largely written by vendors (Bifrost/Maxim being the visible case); adoption decisions require our own load tests, never blog benchmarks.
+
+- 5\. **Standing rules:** every adoption behind a kernel interface we own · license gate at adoption time, re-checked at each major upgrade · SBOM per release so any customer can scan what we ship · no OSS API ever leaks through a Layer-1 contract.
+
+**The sentence for customers and due diligence:** *NXT Core's guarantees — audit, policy, autonomy, evaluation, playbooks — are proprietary NXT engineering. Everything beneath them is proven, permissively licensed open infrastructure, self-hosted in your perimeter, listed in a signed SBOM you can verify.*

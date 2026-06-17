@@ -1,0 +1,125 @@
+---
+title: "Repo strategy"
+sidebarTitle: "Repo strategy"
+description: "Repository strategy and engineering doctrine — old body, new organs."
+icon: "git-branch"
+---
+
+| **Series** | NXT Core Platform Program |
+|------------|---------------------------|
+| **Owner**  | Dr. Matthias Lange        |
+| **Date**   | 11 June 2026              |
+| **Status** | For decision              |
+
+## 1. The decision: evolve the repo — it's not refactor vs. scratch, it's old body, new organs
+
+We build on the existing repository. The expensive, slow-to-rebuild assets are exactly what it already has in production: the hash-chained audit ledger, workspace tenancy woven through every model, policy gates with idempotent auto-execution, the inbox→case→communication spine live at the first customer, 243 disciplined migrations, CI→Helm→k3s with observability. Roughly 70% of the kernel guarantees are real today. A greenfield rewrite would spend its first year reproducing them while the first deployments wait — and it would freeze the evidence: production audit chains, case history, and learning signals are platform IP under our own positioning; scratch resets them to zero.
+
+At the same time, most of what the v4.0 map demands is new by definition — Evaluation Engine, Learning Engine, Skill Runtime, the knowledge half of AI Memory, Service Contract, Metering. Those are built greenfield *inside* the repo, against the new package boundaries, with enforcement on from day one. The honest composition:
+
+- **~50% new organs:** built clean in the new structure.
+
+- **~30% re-homed:** existing production code moved behind new names and boundaries — renaming and boundary-drawing, not rewriting.
+
+- **~15% quarantined:** the AP estate into the Founders Finance module; payment execution hard-flagged, internal-only.
+
+- **~5% deleted:** dead experiments. Deletion is a gift; a funeral list is part of the first sprint.
+
+**The contamination rule (the one that decides whether this works):** no new file lands outside the new package structure — ever, including hotfixes. Enforced by the import-linter ratchet: the legacy allow-list may only shrink; CI fails on growth.
+
+## 2. Disposition table (from the as-is inventory to the v4.0 map)
+
+| **v4.0 component** | **As-is source** | **Disposition** |
+|----|----|----|
+| Model Gateway | direct provider calls in app/llm | Rebuild thin on adopted OSS proxy (LiteLLM; Bifrost trigger per Memo 12); EU routing default; no direct provider imports anywhere (lint rule) |
+| Skill Runtime | AgentCore (separate repo) + scattered pipeline code | Rebuild at merge: AgentCore joins the monorepo as the Skill Runtime build — aligned to envelopes, per-step recording, the execution ladder — not transplanted as-is |
+| AI Memory — evidence | MinIO + OCR + provenance | Re-home (strong as-is); storage default switches to customer S3, SeaweedFS fallback |
+| AI Memory — knowledge & context | context-builder fragments | New organ: knowledge store (pgvector), entitlement retrieval, recorded context manifests |
+| AI Auditor | hash-chained audit events + journey UI | Re-home + harden: universal-execution coverage, export bundles, per-workspace chain sequencer (§5) |
+| Evaluation Engine | scattered metrics jobs | New organ on Langfuse substrate; golden sets, release gates, CI integration |
+| Learning Engine | matching-corrections fragments | New organ; Argilla as curation surface; fragments absorbed as first signal sources |
+| Policy Gate | policy store + gates (AP-flavored) | Re-home + generalize: vocabulary out to L3, SoD added |
+| Autonomy Controller | autonomy engine + auto-exec scan | Re-home + bind: evidence binding to Evaluation Engine; envelope computation for the runtime |
+| Integration Fabric | ad-hoc connectors, ERP posting | Re-home behind new contract: freshness semantics, staleness→exception; posting becomes the reference Tier-3 implementation |
+| Platform Core | JWT/magic-link auth, workspaces, flags | Re-home + replace auth: Keycloak federation in; workspaces stay (they are the Pattern-B foundation, §6); flags split customer/NXT |
+| Platform API | one mixed FastAPI surface | Carve-out (first new organ): published /v1, Workspace-eats-public-API CI check |
+| Agent Case Framework | WorkObjects + workflow engine + checklist/task shapes | Re-home + consolidate WorkItem shapes strangler-style |
+| Case Execution Library | inbox, routing, communication, analytics | Re-home (production-proven); SWK specifics extracted to L3/L4 |
+| Way 2 (Registry, Contract, Metering, SDKs) | review-workflow SDK stubs | New organs — the ARZ-critical lane |
+| NXT Workspace / Cockpit / Admin | SWK-polished SPA + mixed admin pages | Workspace: re-home; Cockpit: new; Admin: extract; legacy AP pages behind the Founders flag or deleted |
+| Founders Finance module | ~70% of backend (AP estate) | Quarantine + re-home opportunistically; payments hard-flagged off everywhere external, first |
+| Funeral list | portal scrapers, predictive-workflow stub, dead routes, mock connectors beyond test use | Delete, day one |
+
+## 3. Modularization: contracts, not processes
+
+**Code modules — hard.** One package per kernel element with an explicit public interface: kernel.gateway · skill_runtime · memory · auditor · evaluation · learning · policy · autonomy · integration · core, then suites.caseops, suites.embedded, modules.*, deployments.*. Other packages import only a module's public surface, never internals — the same import-linter that enforces layers enforces module interfaces. This is what makes Memo 12's substrates swappable (LiteLLM→Bifrost, Langfuse→Phoenix) without distributed-systems tax.
+
+**Deployables — conservative.** Exactly four of ours, each with a physical reason: **api** (request surface), **worker** (CPU-bound and batch), **skill-runtime** (the AgentCore successor: different scaling and timeouts, and a blast-radius wall between code-that-talks-to-models and code-that-holds-the-ledger), **telemetry-exporter** (small, security-critical, and politically separate — one tiny auditable binary answers "what leaves our perimeter"). Adopted deployables beside them: gateway proxy, Keycloak, Langfuse. Anyone proposing a fifth NXT deployable owes a physical reason.
+
+## 4. Language stack
+
+**Python 3.12+ for everything with semantics** — kernel, suites, skills, playbook tooling. Strictly typed (mypy in CI), Pydantic as the single schema source of truth. Rationale: team gravity (the engineers, the 117k existing LoC, the strangler interop are Python), ecosystem gravity (the entire adopted AI substrate is Python-first), and the fact that the one genuine Go performance case — the gateway hot path — is *bought*, not written (Memo 12).
+
+**TypeScript for the surfaces and the first SDK**, generated from OpenAPI so the contract has one origin. **Go permitted only for contract-speaking sidecars** with zero business logic and a real distribution case — telemetry exporter first, customer-ops CLI if ever. **The "Go for the platform layer" intention is formally retired.** Escape hatch on record: a profiled, *measured* Python hotspot in the kernel may become a Rust/Go extension behind the same module interface — a weekend, not a stack decision.
+
+## 5. Performance & concurrency doctrine
+
+**SLOs per interaction class:** interactive reads **≤300ms p95** (served from state) · live skill calls **≤3s p95**, streaming · batch unbounded, throughput-monitored.
+
+**The budget truth:** on a live AI call, the model costs 500–3,000ms; our entire orchestration, policy, and recording overhead is 5–25ms. Language optimizes ~1% of the budget; architecture optimizes the rest. Per-instance BYO means every deployment serves one customer, not the internet: load is bounded and forecastable, and the scaling lever is replicas.
+
+**Design rules (hard requirements, not preferences):**
+
+- 1\. **Serve-from-state, refresh-behind** wherever the product allows: for the ARZ copilot, suggestions are computed asynchronously by the Skill Runtime when a case opens or changes — fully governed, fully recorded, off the clock — and the copilot endpoint *reads* that state in \<50ms with explanation, confidence, and evidence links attached. The fast path and the attestable path are the same path. Live calls use fast model tiers, streaming, and context caching.
+
+- 2\. **Nothing synchronous on the hot path except the decision itself.** Audit records, metering events, and learning signals write to ordered outboxes; consumers persist them asynchronously.
+
+- 3\. **The chain sequencer:** the hash chain is per-workspace single-writer by nature; therefore chaining happens off the hot path — outbox-ordered, one sequencer per workspace — giving guaranteed order with zero hot-path contention. Verification runs on the sealed chain.
+
+- 4\. **Never hold a DB connection across a model call.** Load context, release, await, reacquire to record. Lintable; linted.
+
+- 5\. **CPU work lives only in workers**, in queue classes (interactive/standard/batch) with separate pools; ingestion surges can never queue ahead of a copilot refresh. Backpressure degrades to *last computed state with a staleness flag* — degraded freshness beats degraded latency, and the platform records the degradation.
+
+- 6\. **Idempotency-first atomicity:** key reservation is the first atomic act of any service-contract call; concurrent retries collapse before money is spent.
+
+- 7\. **Acceptance gate:** a load test at **5× projected ARZ peak** on our infrastructure passes before integration testing with the partner begins. Vendor benchmarks don't count.
+
+- 8\. **The known ceiling, pre-answered:** gateway-proxy tail latency under sustained concurrency is the documented Python weak point; the Bifrost swap trigger (Memo 12) is the bought escape hatch, contained behind our gateway interface.
+
+## 6. Pattern-B tenancy: instance → workspace → claims
+
+The ARZ deployment runs one central service used by many of the partner's customers, each with their own software instance and users. The structure:
+
+**Instance = the partner (ARZ/Teemer).** One NXT Core deployment in their environment; perimeter, contract, operating annex at this level.
+
+**Workspace = one partner customer** (one practice / one partner software instance). Hard isolation on every record, case, and piece of evidence — structurally provable. **New requirement: workspace provisioning becomes an Admin-API operation** — partner onboards a customer, calls the API, workspace exists with credentials.
+
+**Identity: machines authenticate; end users are claims.** Practice users never become NXT users — they live in the partner's software, authenticated there. Each partner software instance holds machine credentials **bound to exactly its workspace** (a call with practice A's credentials physically cannot reach practice B — enforced at credential level). The human travels as a claim: every service-contract call carries on_behalf_of: \<partner user reference\>, recorded in the Execution's actor — so the audit trail still answers "which person at which practice triggered and accepted this," while NXT manages zero end-user accounts and minimal personal data. Humans who log into NXT surfaces are partner staff only (partner ops view, role-scoped).
+
+**Four explicit designs on top:**
+
+- 1\. **Shared knowledge, isolated cases:** billing-rule knowledge, skills, and the playbook are instance-level assets entitled to all workspaces — one knowledge version, evaluated once, serving every practice; cases and evidence remain workspace-isolated.
+
+- 2\. **Cross-workspace learning is governed, contractual, and curated:** no raw case content crosses workspaces; curated, de-identified dataset candidates flow to playbook-level improvement through the Learning Engine's gates. A contract clause, not just a code path — and a selling point for the partner: every customer makes the component better for all.
+
+- 3\. **Metering per workspace is the partner's downstream invoice:** our per-workspace usage counters become the meter the partner bills their customers with — surfaced in the partner ops view.
+
+- 4\. **Fairness inside the instance:** per-workspace rate budgets on the §5 queue classes; one chain's batch run cannot starve a small practice's copilot.
+
+**Visibility boundary, stated up front:** the partner ops view shows aggregate quality and per-workspace operational health by default; per-workspace case *content* visibility is an entitlement the partner's contracts with their customers must cover — configurable per workspace, off by default. Their data-protection homework, our switch.
+
+**Net-new build items from this section** (all on the ARZ critical path anyway): workspace provisioning API, credential-to-workspace binding, per-workspace budgets, the on-behalf-of claim convention. ~2 engineer-weeks total.
+
+## 7. First moves, in order
+
+- 1\. **Day one:** payment quarantine (hard flags, removed from external surfaces) · package skeleton · import ratchet on · funeral list executed.
+
+- 2\. **First new organ:** Platform API carve-out + Service Contract — ARZ integration depends on it, and it forces the kernel boundaries to become real.
+
+- 3\. **AgentCore merge at the Skill Runtime definition** — the merge *is* the alignment, not a prelude to it.
+
+- 4\. **Outbox + chain sequencer** built with the Skill Runtime (the §5 rules are prerequisites for the ARZ load profile, not optimizations after it).
+
+- 5\. **Pattern-B tenancy items** (§6) alongside the Service Contract.
+
+- 6\. Everything else follows the roadmap (Memo 06), which this memo's doctrine now governs.

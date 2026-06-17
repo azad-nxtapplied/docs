@@ -1,0 +1,208 @@
+---
+title: "Engineering backlog"
+sidebarTitle: "Engineering backlog"
+description: "The platform foundation sprint backlog."
+icon: "list-todo"
+---
+
+| **Series** | NXT Core Platform Program |
+|------------|---------------------------|
+| **Owner**  | Dr. Matthias Lange        |
+| **Date**   | 11 June 2026              |
+| **Status** | For kickoff with Azad     |
+
+## How to read this
+
+This is not the full roadmap (Memo 06) — it is the **foundation sprint**: the work that must land before feature work can proceed safely, plus the first ARZ-critical organ. Items are grouped into four waves; within a wave, order is roughly parallelizable. Each item states **why** (so scope decisions can be made without re-asking), **scope**, and **done** (the acceptance bar). Effort in engineer-days (ED), calibrated to one senior engineer who knows the codebase.
+
+Guiding constraints from Memo 13, true for every item below: new code lands only in the new package structure; the import ratchet may only shrink; no file outside the structure, ever, including hotfixes.
+
+## Wave 0 — Make the structure real (Week 1)
+
+*Nothing new is built until the boundaries that keep it clean exist. This wave is cheap and total; it is the precondition for everything after.*
+
+### 0.1 Quarantine payment execution — do first, before anything
+
+**Why:** highest-risk surface (moves money), in **S** maturity, currently in the main deployable. Must be unreachable from any customer-facing path before a single new line is written.
+
+**Scope:** feature-flag every vendor-payment-execution path (SEPA file, bank API, ERP run) to default-off; remove all payment routes from the API router; assert their absence from the OpenAPI surface; tag the package internal-only.
+
+**Done:** payment endpoints return 404 in a default build; a test asserts no payment path appears in the generated OpenAPI; flag documented.
+
+**ED:** 1
+
+### 0.2 Package skeleton
+
+**Why:** the v4.0 map must exist as directories before code can be sorted into it; the skeleton is the contract.
+
+**Scope:** create `kernel/{gateway,skill_runtime,memory,auditor,evaluation,learning,policy,autonomy,integration,core}`, `suites/{caseops,embedded}`, `modules/`, `deployments/`, `apps/{api,worker,skill_runtime,exporter}`. Each kernel package gets an empty `public.py` (its only legal import surface) and a README stating its one responsibility. No code moved yet — just the frame.
+
+**Done:** skeleton merged; every package documented with its single responsibility; CI green on an empty frame.
+
+**ED:** 1
+
+### 0.3 Import-linter ratchet
+
+**Why:** the layer model and module boundaries are real only if a machine enforces them; the ratchet is what prevents the monolith re-fusing under delivery pressure.
+
+**Scope:** install import-linter; encode the contracts — layers depend only downward; no module imports a sibling module's internals (only its public.py); no application code imports a model-provider SDK directly. Seed a legacy allow-list capturing today's violations; add a CI check that fails if the allow-list grows.
+
+**Done:** CI fails on a deliberate cross-boundary import and on allow-list growth; current code passes via the allow-list.
+
+**ED:** 2
+
+### 0.4 Manifest + IP class gate
+
+**Why:** the product/bespoke line must be machine-checkable (Memo 02 §3); manifests are where promotion governance later hooks in.
+
+**Scope:** define manifest.yaml schema (id, layer, ip_class ∈ platform\|product\|bespoke, owner); require one per modules/ *and deployments/*; CI fails if missing or malformed.
+
+**Done:** CI rejects a module without a valid manifest.
+
+**ED:** 1
+
+### 0.5 The funeral list
+
+**Why:** the repo should shed dead weight before it gains organs; every deletion lowers the maintenance and audit surface.
+
+**Scope:** delete the vendor-portal scrapers, the predictive-workflow stub, dead/unmounted routes confirmed unused, and mock connectors beyond test fixtures. Record each deletion with a one-line rationale in a REMOVED.md.
+
+**Done:** listed items gone; test suite green; REMOVED.md committed.
+
+**ED:** 1
+
+**Wave 0 total: ~6 ED. Exit condition: the structure exists, is enforced, and the dead weight is gone.**
+
+## Wave 1 — The Platform API and the first contract (Weeks 2–3)
+
+*The single external surface, carved out and disciplined — because every Wave-2 organ and all ARZ integration depend on it.*
+
+### 1.1 Platform API carve-out
+
+**Why:** today one FastAPI surface is simultaneously internal and external; the positioning and the embedding story require one published, versioned, dogfooded API.
+
+**Scope:** establish /v1 as the public surface with OpenAPI 3.1; separate internal/platform routes onto a distinct, internally-authenticated surface (disabled in customer builds except the exporter); add the CI check that the Workspace SPA references only /v1.
+
+**Done:** /v1 published with generated OpenAPI; CI fails if the SPA imports a non-public route; internal routes unreachable in a customer build.
+
+**ED:** 5
+
+### 1.2 Service Contract v1 (the ARZ shape)
+
+**Why:** ARZ integration *is* this contract; defining it early lets the "Hello Teemer" milestone happen in July, surfacing integration risk months before go-live.
+
+**Scope:** implement `POST /v1/services/{service}/requests` (idempotency-key mandatory) → `202 {request_id, case_id}`; poll + signed-webhook delivery of `{status, result, explanation, confidence, evidence_url, execution_id}`; every call creates a Case and produces Executions. Result schema is per-service (registry stub for now). Sandbox service for integration testing.
+
+**Done:** an end-to-end sandbox call creates a case, returns the full envelope, fires a verified webhook, and appears in the audit journey; idempotent retries collapse.
+
+**ED:** 6
+
+### 1.3 SDK stub (TypeScript first)
+
+**Why:** Teemer integrates in TS; an afternoon-integration SDK is the difference between a smooth July milestone and a frustrating one.
+
+**Scope:** generate the TS client from the OpenAPI; hand-add idempotency, retry, and webhook-signature verification ergonomics; ship one runnable example against the sandbox.
+
+**Done:** the example completes a sandbox request end to end from a clean project in under an hour.
+
+**ED:** 2
+
+**Wave 1 total: ~13 ED. Exit condition: a partner can call a governed sandbox service through a published API with an SDK — "Hello Teemer" is unblocked.**
+
+## Wave 2 — The recording spine and the AI substrate (Weeks 3–6, overlaps Wave 1)
+
+*The components that make the contract's promises true: recording that scales, model access that is governed and sovereign, the runtime that bounds skills.*
+
+### 2.1 Execution ledger hardening + the outbox/chain-sequencer
+
+**Why:** the ledger is the platform's spine and the audit promise; under ARZ's concurrent load a synchronous hash chain would be the bottleneck (Memo 13 §5). This is the one place concurrency design is existential.
+
+**Scope:** make record_execution() the single enforced write path (close remaining gaps: model calls, context assembly, connector reads); move hash-chaining off the hot path to an ordered outbox consumed by a per-workspace single-writer sequencer; scheduled chain verifier; INSERT/SELECT-only DB grants for the app role.
+
+**Done:** a concurrency test shows N parallel skill steps recording without lock contention and producing a verifiable per-workspace chain; verifier passes; no UPDATE/DELETE grant exists.
+
+**ED:** 6
+
+### 2.2 Model Gateway
+
+**Why:** EU routing is the sovereignty promise and must be enforced at the only place models are reached; cost-per-case needs capture here.
+
+**Scope:** introduce the OSS proxy substrate (LiteLLM) behind kernel.gateway.public; EU-region routing default; provider fallback; model-tier resolution per capability; token/cost capture written to the causing Execution; lint rule forbidding direct provider imports elsewhere.
+
+**Done:** all model traffic flows through the gateway (no direct provider import passes lint); a call records model version and EUR cost on its execution; fallback exercised in a test.
+
+**ED:** 4
+
+### 2.3 Skill Runtime (AgentCore merge)
+
+**Why:** the AgentCore runtime must enter the monorepo *as* the Skill Runtime, aligned to envelopes and per-step recording — the merge is the alignment (Memo 13 §2).
+
+**Scope:** bring AgentCore into apps/skill_runtime + kernel.skill_runtime; formalize the autonomy envelope (tier, tool allow-list, spend caps) received per task and enforced pre-call; every step an Execution; honor the no-DB-connection-across-model-call rule; MCP for tool definitions where it fits.
+
+**Done:** a skill runs multi-step under an envelope it cannot exceed; every step recorded; an envelope-violation attempt is blocked and logged; runs as its own deployable.
+
+**ED:** 8
+
+### 2.4 Serve-from-state pattern for interactive components
+
+**Why:** the ARZ copilot needs ≤300ms reads; a fresh pipeline per keystroke cannot deliver that, and precomputed-and-recorded suggestions make the fast path and the attestable path identical (Memo 13 §5).
+
+**Scope:** when a case opens/changes, the Skill Runtime computes suggestions asynchronously and stores them as case proposal state (with explanation/confidence/evidence already attached); the interactive read endpoint returns that state; edits trigger background recompute with a staleness flag.
+
+**Done:** the interactive read meets ≤300ms p95 in a load test while suggestions remain fully recorded and explained.
+
+**ED:** 4
+
+**Wave 2 total: ~22 ED. Exit condition: governed, sovereign, recorded, concurrent skill execution — the substrate the Service Contract promised.**
+
+## Wave 3 — Pattern-B tenancy and identity (Weeks 5–7, overlaps Wave 2)
+
+*What the ARZ multi-customer topology requires, and the IdP that bank/healthcare IT will demand.*
+
+### 3.1 Workspace provisioning API + credential-to-workspace binding
+
+**Why:** ARZ serves many partner customers, each a workspace; provisioning must be an API operation, and each partner instance's credentials must be physically bound to exactly its workspace (Memo 13 §6).
+
+**Scope:** Admin-API endpoint to create a workspace with scoped machine credentials; enforce credential→workspace binding at the auth layer (a credential cannot address another workspace); on_behalf_of claim convention recorded in the Execution actor.
+
+**Done:** a provisioning call creates an isolated workspace; a cross-workspace call with the wrong credential is rejected at the auth layer; on_behalf_of appears in the audit journey.
+
+**ED:** 4
+
+### 3.2 Enterprise SSO (Keycloak federation)
+
+**Why:** magic-link/Google auth will not pass bank or healthcare IT review; OIDC federation to the customer IdP is a week-one due-diligence finding.
+
+**Scope:** Keycloak per instance as broker; OIDC/SAML federation to the customer IdP (Entra ID first); map IdP groups to NXT roles; retain magic-link/Google for internal instances only.
+
+**Done:** a federated login through a test Entra tenant resolves to the correct NXT role; internal-only auth paths disabled in a customer build.
+
+**ED:** 5
+
+### 3.3 Per-workspace rate budgets
+
+**Why:** noisy-neighbour protection — one large partner customer's batch run must not starve a small one's copilot (Memo 13 §6).
+
+**Scope:** per-workspace rate budgets layered on the queue classes (interactive/standard/batch); backpressure degrades to last-computed state with a staleness flag rather than queueing the user.
+
+**Done:** under a simulated batch surge in workspace A, workspace B's interactive reads hold their SLO.
+
+**ED:** 3
+
+**Wave 3 total: ~12 ED. Exit condition: ARZ's instance→workspace→claims topology is real and fair, on enterprise identity.**
+
+## Summary & sequencing
+
+| **Wave** | **Theme** | **ED** | **Gates** |
+|----|----|----|----|
+| 0 | Structure real | 6 | Boundaries enforced; dead weight gone |
+| 1 | Platform API + Service Contract | 13 | "Hello Teemer" unblocked |
+| 2 | Recording spine + AI substrate | 22 | Governed, recorded, concurrent execution |
+| 3 | Pattern-B tenancy + identity | 12 | Multi-customer topology + SSO |
+| Total | foundation sprint | ~53 ED |  |
+
+**Critical path to "Hello Teemer" (July):** 0.1 → 0.2 → 0.3 → 1.1 → 1.2 → 1.3, with 2.1 and 2.2 close behind so the sandbox call is genuinely recorded and EU-routed rather than a hollow stub. At ~1.5 effective platform FTE through the summer, Wave 0–1 is the July focus; Waves 2–3 run into August as Prasanna frees Matthias and ahead of Jorden in October.
+
+**The two items I would not let slip under pressure:** 2.1 (the recording spine — every week it is deferred, more code is written that must later be retrofitted to record correctly) and 1.1 (the API carve-out — it gets harder, not easier, the more code accretes against the unsplit surface). Everything else can flex; these two compound if delayed.
+
+**Three open questions for Azad before kickoff:** (a) is the AgentCore code in a state where merge-as-alignment (2.3) is realistic in ~8 ED, or is there hidden debt that makes a partial rewrite cheaper? (b) does today's audit-event coverage have known gaps beyond model calls / context / connector reads (2.1)? (c) any consumer of the to-be-quarantined payment paths (0.1) we must not break — i.e. is anything internal already depending on them?

@@ -145,12 +145,40 @@
             "group": "Architecture",
             "pages": [
               "engineering/architecture/index",
+              "engineering/architecture/nxt-core-architecture",
+              "engineering/architecture/technical-architecture",
               "engineering/architecture/components/identity-access",
               "engineering/architecture/components/configuration-secrets",
               "engineering/architecture/components/eventing",
               "engineering/architecture/components/data-access",
               "engineering/architecture/components/observability",
               "engineering/architecture/data-models"
+            ]
+          },
+          {
+            "group": "Platform program",
+            "pages": [
+              "engineering/platform/core-platform-overview",
+              "engineering/platform/capability-catalogue",
+              "engineering/platform/make-or-source",
+              "engineering/platform/repo-strategy",
+              "engineering/platform/engineering-backlog"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Strategy",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": ["strategy/start-here"]
+          },
+          {
+            "group": "Positioning & market",
+            "pages": [
+              "strategy/positioning",
+              "strategy/market-landscape"
             ]
           }
         ]

@@ -1,0 +1,88 @@
+---
+title: "Core platform overview"
+sidebarTitle: "Core platform overview"
+description: "Customer-facing overview of the NXT Core AI Operations Platform."
+icon: "book-open"
+---
+
+| **Document** | Customer-facing platform documentation |
+|--------------|----------------------------------------|
+| **Audience** | COO / CFO / CIO and IT due diligence   |
+| **Owner**    | Dr. Matthias Lange                     |
+| **Version**  | 1.0                                    |
+| **Review**   | 1.9.2026                               |
+
+## 1. Why this platform exists
+
+Every bank, insurer, and healthcare company in Europe is experimenting with AI. Very few are running it. What stops pilots at the threshold of production is a question the pilot never had to answer: **can you attest to how this AI behaves?** The EU AI Act, sector regulation from DORA to MDR, and supervisory practice converge on the same expectations: know what your AI did and why, prove its quality before and after every change, keep humans in control of consequential decisions, and be able to show all of it — to your auditor, your supervisor, your board.
+
+NXT is The AI Operations Company: we make AI work in regulated industries — governed, attestable, and getting better every cycle. We stand on two assets: **proven playbooks** per key process, and **the AI Operations Platform — NXT Core**, described in this document.
+
+## 2. What the platform does — continuously
+
+**It sees and remembers.** Every AI decision is recorded with its full context: what the model saw, which version produced the result, what it cost, what happened next. Any case can be reconstructed; any question is answered with evidence. This goes beyond watching systems — it makes AI behavior itself auditable.
+
+**It keeps people in command.** Your policies run as enforced gates, not guidelines. Consequential decisions route to your people with the evidence beside them. AI acts alone only within limits it has demonstrably earned — and those limits tighten automatically the moment quality slips.
+
+**It makes the operation better.** Every correction your team makes becomes a measured improvement: validated against reference data, released only when proven, visible in quality terms you can show your board. Oversight does not end at go-live; it becomes the engine of improvement.
+
+## 3. The architecture at a glance
+
+NXT Core is organized in four layers. Read bottom-up, each layer exists because the one below made it safe; read top-down, nothing you configure ever weakens a guarantee, because guarantees live where no one can touch them.
+
+| **Layer** | **What it is** | **What it means for you** |
+|----|----|----|
+| **Kernel** | The guarantees and the memory: every action recorded with what the AI saw (AI Auditor), policies enforced as gates, autonomy earned on evaluation evidence, governed knowledge and context, EU-routed model access, learning machinery that turns corrections into validated improvements. | Identical in every deployment — compliance and learning are never custom-built. |
+| **AI Suites** | The two ways of working, exposed through one open Platform API: Case Operations (work runs end to end with your people in the loop) and Embedded AI Components (your software calls governed components). Plus the human surfaces: NXT Workspace, NXT Cockpit, NXT Admin. | Whether NXT runs a process or your software calls a component invisibly: same audit trail, same governance. |
+| **AI-native Playbooks** | Per key process: the validated AI-native process design — what AI does, where humans decide — with the skills, golden datasets, policies, exception rules, and human checkpoints. Packaged, versioned, release-gated. | Your deployment arrives loaded, never blank. The second customer of a playbook gets configuration, not a project. |
+| **Deployment** | The only layer that knows you: your parameter values, autonomy choices, connections, branding — and your own components, owned by you, yet fully governed by the layers beneath. | Everything specific to you sits on top, so everything beneath stays standard, certifiable, upgradeable. The IP line and the architecture line are the same line. |
+
+## 4. Your team in command — three surfaces
+
+**NXT Workspace** — humans in the loop: clear queues, every AI proposal presented with its reasoning and documents beside it, one-click approve, correct, or override. Every correction quietly makes the AI better.
+
+**NXT Cockpit** — humans on the loop: how every AI capability performs over time, samples of completed work, and the place where — on evidence — your organization decides when the AI earns more independence. Supervision as a workflow, not a quarterly meeting.
+
+**NXT Admin** — your administrators: users and roles, policy values, autonomy levels, connections. Every change recorded like any other action in the system.
+
+## 5. Two kinds of AI solutions
+
+**Regulated case operations.** End-to-end processes — claims processing, customer servicing, complaint management. Work arrives, is assessed, decided, and acted upon; AI does the heavy lifting; your team works inside the process through the NXT Workspace with complete evidence at hand.
+
+**Governed AI components, embedded.** Intelligence inside your existing software and workflows — an invoicing copilot in a billing product, a completeness check inside a workflow step. Your system calls the component; the result returns with an explanation, a confidence level, and a link to the full evidence. Your product, your process — governed intelligence inside it.
+
+Both run on the same platform and draw on the same playbooks. An embedded component call is governed exactly like a case on a clerk’s screen.
+
+## 6. In your environment, with what you have
+
+**Your perimeter.** NXT Core deploys as a self-contained installation into your cloud or data center, federated to your identity provider (e.g. Microsoft Entra ID), storing to your own storage, forwarding metrics into your monitoring, riding your change process — with evaluation evidence attached to every release. Your data does not leave; your core systems remain the systems of record.
+
+**Your platforms, kept.** If you already orchestrate processes with an established workflow platform, keep it — it answers “which step comes next.” NXT answers the questions it doesn’t: what did the AI see when it decided, is its quality proven, when may it act alone, and is it improving? Your existing workflows can call NXT components as governed steps; your estate becomes more valuable, not redundant.
+
+**The operating split.** Your team operates the system — the deployment runs in your perimeter under your uptime ownership. NXT operates the AI: continuous quality monitoring, evaluation, prompt and playbook evolution, autonomy management — every change validated before it reaches your environment. Only agreed quality signals leave your perimeter, on a short, explicit, inspectable list; business content provably does not.
+
+**Your accountability, carried.** No vendor can take over a regulated company’s responsibility for its decisions, and we don’t pretend to. What NXT provides is what makes that accountability carryable: an attestable governance for AI quality — the records, the evidence, the controls, and the operating model around them. When your auditor asks, you answer from evidence, not from hope.
+
+## 7. Security and compliance posture
+
+- EU data residency by design; model access routed through EU-region endpoints by default.
+
+- Deployment in your perimeter; hard tenant isolation; enterprise single sign-on via your identity provider; role-based access throughout.
+
+- Tamper-evident, append-only audit ledger with audit-ready exports — timeline, approvals, evidence bundle, change log — for internal audit, external auditors, and supervisors.
+
+- No silent changes: every modification of AI behavior — prompts, policies, knowledge, playbooks — passes evaluation gates before release, with the thresholds documented.
+
+- Built on proven, permissively licensed open infrastructure, self-hosted in your perimeter and listed in a signed software bill of materials your security team can verify; all platform guarantees are proprietary NXT engineering.
+
+- NXT operates an ISO 27001-aligned information security management system; certification is in progress.
+
+## 8. How working with NXT feels
+
+**Design.** We start from your process and a proven playbook: in weeks, not quarters, we shape its AI-native version — what AI does, where your people decide, which rules apply, what quality means and how it will be measured.
+
+**Build.** We deploy the platform into your environment and bring the playbook live — configured to your policies, connected to your systems, integrated with your identity and your change management.
+
+**Run.** The operation starts careful — AI proposes, your people decide — and earns its independence step by step, on measured evidence. NXT operates the improvement cycle; you see results in numbers — cycle times, quality scores, automation share — and an audit trail that is always one export away.
+
+The result: a process that runs in weeks, is governed from day one, improves every month — and can be attested at any moment.

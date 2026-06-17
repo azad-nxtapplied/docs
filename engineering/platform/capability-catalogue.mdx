@@ -1,0 +1,187 @@
+---
+title: "Capability catalogue"
+sidebarTitle: "Capability catalogue"
+description: "The component-aligned capability catalogue across the four layers."
+icon: "list-checks"
+---
+
+| **Series** | NXT Core Platform Program |
+|------------|---------------------------|
+| **Owner**  | Dr. Matthias Lange        |
+| **Date**   | 11 June 2026              |
+| **Status** | Publishable draft         |
+| **Review** | 1 September 2026          |
+
+## Why four layers
+
+NXT Core is built in four layers, and the order is the logic of the platform. **Layer 1, the Kernel**, provides the guarantees and the memory: before any AI does anything useful, the questions that decide whether you may run it at all are answered — is every action recorded, with what the AI saw? Are policies enforced, not just written down? Is quality measured? Is it learning, governedly? **Layer 2, the AI Suites**, turns guarantees into ways of working: running a process end to end with people in the loop, or letting your own software call governed components — both through one open API, both under the same command surfaces. **Layer 3, the AI-native Playbooks**, adds the industry: the validated process design, skills, datasets, policies, and exception rules per key process — so a deployment arrives loaded, never blank. **Layer 4, the Deployment**, adds you: your values, your choices, your own components — owned by you, governed by everything beneath.
+
+Read bottom-up: each layer exists because the one below made it safe. Read top-down: nothing you configure ever weakens a guarantee, because guarantees live where no one can touch them.
+
+Two terms, used precisely: a **Skill** is a capability given to the AI — a taught, versioned unit of work. A **Component** is a solution built for a customer that runs on the platform, composed of skills. Playbooks define and validate both.
+
+## Layer 1 — The Kernel
+
+*Ten components. The guarantees and the memory, identical in every deployment.*
+
+### Model Access ◐
+
+**Description. All AI model usage flows through one controlled gate: EU data centers by default, automatic fallback if a provider falters, the right model size for each task, the exact model version pinned and recorded for every result — and every cent of model cost attributed to the case that caused it. AI usage becomes governable, sovereign, and economically transparent. This holds whether the model is a hosted language model or a trained ML model NXT serves itself — a ranker or classifier behind the same governed gate. NXT governs AI decisions, not only LLM calls: every inference, classical or generative, is recorded, costed, and attestable alike.**
+
+**Technical. In-instance gateway over two backends — an OSS LLM proxy for language models and an OSS model-serving runtime for NXT-trained models — under one governance wrapper; EU-region routing default; provider fallback; model tiers per capability; per-execution token/cost capture; no application code reaches a provider directly (lint-enforced).**
+
+### Skill Runtime ◐
+
+**Description.** Skills — the units of work the AI performs — rarely consist of a single model call: a completeness check retrieves rules, extracts, assesses, and composes its explanation. The Skill Runtime executes these bounded, multi-step units inside hard limits: which tools may be used, how much may be spent, how autonomous the skill may be — with every single step recorded. Whether a skill runs inside a full case operation or behind an API call from your software, it runs here, under the same discipline.
+
+**Technical.** Bounded multi-step executor under autonomy envelopes (tier, tool allow-list, spend caps) computed by the Autonomy Controller; every step an execution. The execution ladder: the Model Access makes one call; the Skill Runtime runs one skill; the Agent Case Framework (Layer 2) orchestrates one case. Embedded component calls end at the second rung.
+
+### AI Memory ◐
+
+**Description.** What the AI draws on, governed in three holdings. The **knowledge base**: the reference content that shapes AI behavior — procedures, regulatory texts, billing rules — versioned and activated only after quality checks, so the AI never quietly works from outdated or unapproved sources. **Context assembly**: before the AI decides anything, the platform composes precisely what it gets to see and records that composition permanently — the question every supervisor will eventually ask, *what did the AI know when it decided?*, has an exact answer for every single decision. The **evidence store**: every document and artifact, unalterable, retrievable, retained per your policies, with every extracted value remembering its source down to the page and position.
+
+**Technical.** Versioned knowledge collections with eval-gated activation and entitlement-aware retrieval (pgvector); context assembly producing signed manifests linked to the consuming execution; content-addressed object storage (customer's S3-compatible store by default) with field-level provenance and retention policies.
+
+### AI Auditor ●
+
+**Description.** The component that makes audits a download instead of a project. Every meaningful action — by model, system, or human — lands the moment it happens in a tamper-evident, append-only record. For any case, the Auditor tells the complete story on demand: what happened, in what order, who approved what, what the AI saw and proposed, what changed and why — and packages it as an export your internal audit, external auditors, or supervisor can take away. Named an auditor, not a log, deliberately: it reconstructs, verifies its own integrity, and testifies.
+
+**Technical.** Hash-chained, append-only execution ledger (single enforced write path: nothing changes state or causes a side effect except through a recorded execution); per-case journey reconstruction; packaged export bundles (timeline, approvals, evidence, change log); continuous chain verification.
+
+### Evaluation Engine ○ (first version in build)
+
+**Description.** "The AI works well" becomes a measurement, not an opinion. For every capability, curated reference cases with known-correct outcomes serve as the measuring stick; every proposed change to AI behavior — a refined prompt, an updated rule, new knowledge — is tested against them and must meet defined thresholds before it ships. Nothing changes silently; every release carries its scorecard; live quality is watched continuously, and slippage raises the alarm.
+
+**Technical.** Versioned golden datasets (content-hash referenced, change-controlled); backtest runner with per-capability scorecards; release gates in the delivery pipeline with thresholds defined inside playbook artifacts; drift detection via sampled re-scoring of production traffic.
+
+### Learning Engine ◐
+
+**Description.** The platform gets better, governedly. Every correction your team makes, every override, every outcome is captured and put to work: corrections become test cases, test cases reveal improvement opportunities, improvements are validated and rolled out — through the same quality gates as everything else. The system improves measurably month over month, and you can see exactly how and why. This engine is also what NXT operates as a service: the run in design-build-run.
+
+**Technical.** Signals captured as structured executions; curation into dataset and golden-set candidates (with an OSS labeling surface behind it); change proposals to prompts, policies, and playbooks; release exclusively through Evaluation Engine gates.
+
+### Policy Gate ●
+
+**Description.** Your approval limits, escalation rules, thresholds, and separation-of-duties stop being documents people are supposed to remember and become rules the platform enforces — at every relevant checkpoint, before any consequence, every time. Business users adjust the values; the system guarantees the enforcement; every evaluation of a rule is itself recorded. The Policy Gate answers the situational question: *may this happen, now?*
+
+**Technical.** Versioned, executable policy packs evaluated at defined checkpoints; SoD as policy primitives over actor lineage; approval routing from verdicts; override-with-trace; every evaluation recorded on the triggering execution.
+
+### Autonomy Controller ◐
+
+**Description.** The standing question beside the Policy Gate's situational one: *what is this capability allowed at all — and what has it earned?* You decide, capability by capability, how independent the AI may be: drafting only, completing with approval, executing with spot checks, or acting automatically within hard limits. Promotion requires evidence from the Evaluation Engine; demotion is automatic the moment quality slips; both are recorded decisions. Autonomy is a status earned on evidence — never a setting you inherit.
+
+**Technical.** Per-capability, per-tenant tier state (draft → review → sample → auto) bound to evaluation evidence; computes the envelopes the Skill Runtime enforces; promotions approval-gated, demotions alarm-triggered; all changes recorded.
+
+### Integration Fabric ◐
+
+**Description.** Your systems, touched correctly. Work comes in through governed front doors; the platform reads what a case needs from your systems on demand and always knows how fresh that data is — stale data raises a visible exception instead of quietly informing a decision. Writing back — a posting, a status update — happens only as a deliberate, rule-checked, exactly-once handoff. And when a connection fails, work doesn't disappear and the operation doesn't stop: the affected step becomes visible work under human review while everything else keeps moving.
+
+**Technical.** Three connector tiers behind one contract — ingestion (mail, upload, API), reference reads (typed, mandatory freshness contracts; staleness→exception; freshness of data used in any decision recorded in its context manifest), handoffs (idempotency-keyed, policy-gated, recorded). Safe degradation throughout; per-deployment credentials isolated; connectors are platform assets.
+
+### Platform Core ●
+
+**Description.** The unglamorous preconditions: your people sign in with your company login — same identity, same security policies, same offboarding as everywhere in your IT. Business units or mandants operate in strictly separated workspaces; separation is structural, not procedural. And the platform shows its own technical health continuously to your IT — no black box in your data center. One thing Platform Core deliberately does *not* contain: AI observability. That is not a feature here — it is the Kernel itself; the Auditor, the Evaluation Engine, and AI Memory together are what "it sees and remembers" means.
+
+**Technical.** Identity federation to the customer IdP (OIDC/SAML, Entra ID first) via a self-hosted broker; machine credentials per service and partner, workspace-bound; hard workspace scoping on every record; configuration management; technical observability (metrics, health, alerting) shipped per instance.
+
+## Layer 2 — The AI Suites
+
+*One API, three human surfaces, and the two ways of working.*
+
+### Platform API ◐
+
+**Description.** Everything the platform can do is reachable through one open, versioned, documented interface — and NXT's own surfaces use exactly this API, with no private backdoors. If our Workspace can live with it, your integration can. One surface, one contract, one audit of access.
+
+**Technical.** OpenAPI 3.1, versioned; the SPA consumes only the public API (CI-enforced); Layers 3/4 expose at most named endpoints as thin façades.
+
+### NXT Workspace ●
+
+**Description.** Humans in the loop. The screen your team works on: clear queues, each AI proposal presented with its reasoning and the relevant documents right beside it, one-click approve, reject, correct, or override. Designed so the fastest way to work is also the governed way — and every correction quietly makes the AI better.
+
+**Technical.** Evidence-first case views over the Platform API; actions map 1:1 to recorded approvals and executions; corrections emitted as learning signals.
+
+### NXT Cockpit ○
+
+**Description.** Humans on the loop. Oversight doesn't end when automation begins: team leads see how every AI capability performs over time, review samples of completed work, and decide — based on evidence — when the AI has earned more independence and where it must improve. Supervision becomes a workflow, not a quarterly meeting.
+
+**Technical.** Per-capability scorecards from evaluation and live data; sampling queues over closed work; autonomy promotion/demotion as approval-gated actions against the Autonomy Controller.
+
+### NXT Admin ◐
+
+**Description.** Your administrators manage users, roles, policy values, autonomy levels, and connections in one dedicated place — separated from operational screens, with every change recorded like any other action in the system.
+
+**Technical.** Role-gated surface over the Platform API; configuration changes validated against playbook parameter schemas; all changes are executions. (A fourth surface, the Platform Console, is NXT-internal and never customer-visible: fleet quality, release promotion, model routing — the tooling with which NXT operates the AI.)
+
+## Way 1 — Case Operations
+
+### Agent Case Framework ●
+
+**Description.** The orchestration of one case across state, humans, and time. Every piece of work becomes a case with a clear status, deadline, and responsible owner; larger cases break into assignable steps; deviations become classified, visible exceptions that route to the right person while the rest keeps moving — problems become visible work, not hidden risk. Case-level agents decide next steps inside this framework, and nothing they do bypasses the Kernel's recording.
+
+**Technical.** Typed cases with declarative state machines, SLA tracking, ownership, closure records; work items with recorded inputs/outputs; exception taxonomy with resolution lifecycles; human checkpoints; case agents orchestrate through the framework and execute every skill on the Kernel's Skill Runtime.
+
+### Case Domain Memory ●
+
+**Description.** The operational records of the running business — cases, steps, exceptions, approvals — so "where do we stand?" always has an answer, for an operator at 9 a.m. or an auditor three years later. The management view and the audit view never disagree, because they read the same records.
+
+**Technical.** Workspace-scoped operational store (cases, work items, exceptions, approvals) with versioned metric definitions for analytics; the same records feed the Auditor's journeys.
+
+### Case Execution Library ●
+
+**Description.** The proven building blocks of a running operation. The **Inbox**: work arrives as it really arrives — emails, attachments, uploads, system messages — and becomes orderly cases: duplicates recognized, content classified, senders identified, urgency assessed; a governed intake with a measurable funnel. **Routing**: every case reaches the right queue and the right person, with reassignments fully traced. The **Communication engine**: replies drafted by AI in full case context, refined or approved per the capability's autonomy level, sent and tracked — with answers threading back into the same case. **Case Analytics**: volumes, cycle times, SLA performance, exception rates, automation share — the numbers an operations leader runs on.
+
+**Technical.** Multi-channel intake (M365/Gmail/IMAP, upload, API) with deduplication, deterministic routing plus confidence-thresholded classification, identity resolution, per-stage recording; configurable queues and assignment; draft→polish→send&track with reply matching; rollups over the case records.
+
+## Way 2 — Embedded AI Components
+
+### Component Registry ○
+
+**Description.** The catalogue of what your systems can call: each component with its contract, its versions, and who may use it. Adding AI to a workflow becomes choosing from a governed catalogue, not starting an integration project.
+
+**Technical.** Registered components with versioned request/response schemas, entitlements, and lifecycle states.
+
+### Component Memory ○
+
+**Description.** Each component keeps its own governed history: what it has processed, how its quality has developed, what has been learned. A component is not a stateless function — it is an accountable capability with a track record you can inspect.
+
+**Technical.** Per-component, workspace-scoped state and quality series; feeds the Cockpit's scorecards and the Learning Engine's signals.
+
+### Service Contract & SDKs ○
+
+**Description.** One standard way for your software to use the platform: submit work, receive a result with three things attached — a plain-language explanation, a confidence level, and a link to the complete evidence trail. Ready-made libraries make the integration an afternoon, not a quarter. Behind the call, the full machinery runs unchanged: every request is a governed case.
+
+**Technical.** submit → assess → result(+explanation, confidence, evidence link); idempotency-key-first; asynchronous-first with signed webhooks and a synchronous convenience wrapper; TypeScript and Python SDKs generated from the API.
+
+### Metering ○
+
+**Description.** Usage counted precisely per customer and component — the reliable basis for commercial models between you, NXT, and, where you resell, your own customers. For software partners, the meter is itself a product feature: it is the basis of your downstream invoice.
+
+**Technical.** Billing-grade, idempotent counting per workspace/component/day with reconciliation against the case record; surfaced via API and the partner ops view.
+
+## Layer 3 — AI-native Playbooks
+
+*Where the industry lives. One entry: the playbook itself — because every module is made of them.*
+
+### The Playbook ○ (format in build; first extraction scheduled)
+
+**Description.** Per key process, the complete, validated answer to "how is AI applied correctly here": the AI-native redesign of the process — what AI does, where humans decide — together with the skills, the golden datasets that prove their quality, the policies, the exception rules with their resolution paths, and the human checkpoints through which your people work inside the process. Versioned and release-gated: a playbook version goes live only after passing its own quality thresholds, and deploying it for the next customer means binding their parameters — configuration, not a project. An AI-native process is a human-and-AI process by design, and the playbook defines both halves.
+
+**Technical.** Versioned bundle: process design (small deterministic flow vocabulary, readable by process owners and auditors), skills with prompts, golden datasets, policy templates with typed parameters (bound at Layer 4 — never patched), exception taxonomy, Workspace checkpoint configuration, and evaluation suites with release thresholds inside the artifact. Modules package playbooks with connector mappings, audit export templates, documentation, and a pricing unit.
+
+**Current portfolio:** Complaint Management / Bestandsautomatisierung (Banking) — in build with the first customer, productized for the second from day one · Claims Management (Insurance) — candidate · Founders Finance — NXT's internal vertical and proving ground (payment execution quarantined there: internal-only, absent from every customer surface).
+
+## Layer 4 — Deployment
+
+*The only layer that knows you.*
+
+### Configuration ◐
+
+**Description.** Your deployment is shaped by settings, not code changes: your approval thresholds, your autonomy choices, your branding, your connections, your parameter values per playbook. Adjustments are administration, not projects — and your entire configuration exports as one reviewable package, the basis for testing changes safely and proof that your environment is reproducible rather than hand-grown.
+
+**Technical.** Configuration as data validated against playbook parameter schemas; credentials isolated; every change recorded; export/import as versioned bundles (secrets by reference).
+
+### Customer Components ○ (first in build)
+
+**Description.** Where your need goes beyond any playbook, NXT builds your own component — owned by or exclusive to you, with the ownership agreed up front — and it still enjoys every guarantee underneath: audited, quality-gated, autonomy-controlled, learning and improving like everything else on the platform. The defining case: a billing-completeness component built for a software vendor and sold inside their product — their solution, on the licensed platform. Everything specific to you sits at the top so everything beneath stays standard, certifiable, and upgradeable: the IP line and the architecture line are the same line.
+
+**Technical.** Customer-scoped packages with explicit IP classification, consuming only published Layer 1/2 contracts (build-pipeline enforced); composed of skills on the Skill Runtime; promotion to a multi-customer playbook only through a governed gate: parameterization, own golden set, documentation, and a cleared ownership and commercial decision.
