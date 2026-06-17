@@ -145,6 +145,8 @@
             "group": "Architecture",
             "pages": [
               "engineering/architecture/index",
+              "engineering/architecture/nxt-core",
+              "engineering/architecture/platform-core",
               "engineering/architecture/services-overview",
               "engineering/architecture/data-models"
             ]
