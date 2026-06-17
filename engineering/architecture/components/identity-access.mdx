@@ -23,11 +23,11 @@ Identity & Access is the platform's IAM — one bounded context that answers who
 
 ## State & storage
 
-Owns the account records (users, service/agent identities, sessions, API keys), the tenancy records (orgs, workspaces, memberships, and the role each membership carries), and the role→permission map. Credentials are stored hashed and secured. Identity & Access **defines the workspace**: the scope that Data Access and Configuration read from Context originates here, which is why it sits at the top of the foundation.
+Owns the account records (users, service/agent identities, sessions, API keys), the tenancy records (orgs, workspaces, memberships, and the role each membership carries), and the role→permission map. Credentials are stored hashed and secured. Identity & Access **defines the workspace**: the `workspace_id` that travels with each request, and that the lower tiers use for tenant scoping, is resolved here — which is why it sits at the top of the foundation.
 
 ## Dependencies
 
-Builds on [Data Access](/engineering/architecture/components/data-access) (Tier 0); reads token-signing keys and IdP config from [Configuration & Secrets](/engineering/architecture/components/configuration-secrets) (Tier 1); publishes identity events via [Eventing](/engineering/architecture/components/eventing) (Tier 1); and uses the cross-cutting [Context & Observability](/engineering/architecture/components/context-observability). For federated (OAuth) login, provider keys are synced in and the interactive redirect and token-exchange ride the Integration Fabric.
+Builds on [Data Access](/engineering/architecture/components/data-access) (Tier 0); reads token-signing keys and IdP config from [Configuration & Secrets](/engineering/architecture/components/configuration-secrets) (Tier 1); publishes identity events via [Eventing](/engineering/architecture/components/eventing) (Tier 1); and emits telemetry to the cross-cutting [Observability](/engineering/architecture/components/observability). For federated (OAuth) login, provider keys are synced in and the interactive redirect and token-exchange ride the Integration Fabric.
 
 <Note>
   **Identity & Access and the Policy Gate are complementary.** IAM gates _capability_ (do you have a licence); the Policy Gate gates the _specific action_ at execution time. Together they answer both questions.

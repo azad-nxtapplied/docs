@@ -1,0 +1,22 @@
+---
+title: "Observability"
+sidebarTitle: "Observability"
+description: "Cross-cutting · operational telemetry for system health."
+icon: "chart-line"
+---
+
+<Note>
+  **Cross-cutting** — spans every tier and band. Part of the [NXT Core architecture](/engineering/architecture).
+</Note>
+
+Observability provides structured **logging, metrics, and traces** for system health — the operational telemetry that shows how the platform is running.
+
+Each log line, metric, and trace is tagged with the request's `workspace_id` and `correlation_id` (the ids passed along with every call), so a single request can be followed across services and background workers.
+
+<Note>
+  Observability covers **system health**. The immutable, hash-chained record of _why_ an action happened lives in the **AI Auditor** (Record plane), which keeps the two concerns cleanly separated.
+</Note>
+
+## Dependencies
+
+Best-effort and standalone. It reads the `workspace_id` and `correlation_id` already on each request to tag its output; nothing in the foundation depends on it.

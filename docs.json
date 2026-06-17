@@ -149,7 +149,7 @@
               "engineering/architecture/components/configuration-secrets",
               "engineering/architecture/components/eventing",
               "engineering/architecture/components/data-access",
-              "engineering/architecture/components/context-observability",
+              "engineering/architecture/components/observability",
               "engineering/architecture/data-models"
             ]
           }

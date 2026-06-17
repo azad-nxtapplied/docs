@@ -48,7 +48,7 @@ NXT Core is an AI-native platform that runs inside the customer's environment. I
         <div className="card" data-tip="Monitoring and metrics — throughput, autonomy mix, and escalation rate. Reads the audit and evaluation streams.">NXT Cockpit</div>
         <div className="card" data-tip="Configuration and governance — manage autonomy ceilings and approve autonomy promotions. Writes policy and playbook config, gated by RBAC.">NXT Admin</div>
       </div>
-      <div className="api" data-tip="The single typed boundary the Suites call. A REST surface over Band-2 services; every call carries tenant and correlation context from Platform Core.">Platform API</div>
+      <div className="api" data-tip="The single typed boundary the Suites call. A REST surface over Band-2 services; every call carries tenant and correlation ids from Platform Core.">Platform API</div>
       <div className="row">
         <div className="col">
           <div className="glabel">WAY 1 · CASE OPERATIONS</div>
@@ -131,12 +131,12 @@ NXT Core is an AI-native platform that runs inside the customer's environment. I
 
             <div className="glabel" style={{ margin: "10px 0 4px" }}>TIER 0 · BASE (no internal dependencies)</div>
             <div className="row">
-              <a className="card" href="/engineering/architecture/components/data-access" data-tip="The shared, safe way to reach stateful backends. For the DB (system of record): engine, pool, tenant-scoped sessions (workspace_id from Context plus row-level security), transactions, and the migration runner. For the cache (ephemeral): pooled client, key-prefix isolation, distributed locks, and rate buckets. Each component owns its own tables and keyspace.">Data Access</a>
+              <a className="card" href="/engineering/architecture/components/data-access" data-tip="The shared, safe way to reach stateful backends. For the DB (system of record): engine, pool, tenant-scoped sessions (workspace_id carried on the request plus row-level security), transactions, and the migration runner. For the cache (ephemeral): pooled client, key-prefix isolation, distributed locks, and rate buckets. Each component owns its own tables and keyspace.">Data Access</a>
             </div>
 
             <div className="glabel" style={{ margin: "10px 0 4px" }}>CROSS-CUTTING (spans every tier and band)</div>
             <div className="row">
-              <a className="card dashed" href="/engineering/architecture/components/context-observability" data-tip="Carries the ambient request scope — correlation_id, workspace_id, principal — through every call, which is what Data Access and Configuration read for tenant scoping. Observability adds structured logging, metrics, and tracing for system health.">Context &amp; Observability</a>
+              <a className="card dashed" href="/engineering/architecture/components/observability" data-tip="Structured logging, metrics, and tracing for system health. Each log, metric, and trace is tagged with the request's workspace and correlation id, so one request can be followed across services.">Observability</a>
             </div>
 
           </div>
@@ -223,22 +223,22 @@ The layered foundation. Each component below has its own contract page.
 | 1 | **[Configuration & Secrets](/engineering/architecture/components/configuration-secrets)** | Per-workspace config, feature flags, and secret bindings, synced from a secret manager. |
 | 1 | **[Eventing](/engineering/architecture/components/eventing)** | The internal event backbone — publish primitives with a transactional outbox. |
 | 0 | **[Data Access](/engineering/architecture/components/data-access)** | The shared, safe way to reach the DB (system of record) and cache (ephemeral). |
-| — | **[Context & Observability](/engineering/architecture/components/context-observability)** | Carries the ambient request scope through every call, and adds telemetry for system health. |
+| — | **[Observability](/engineering/architecture/components/observability)** | Structured logging, metrics, and traces for system health (cross-cutting). |
 
 ## Design principles
 
 <AccordionGroup>
   <Accordion title="Build downward" icon="arrow-down">
-    Each tier builds only on the tiers below it, forming an acyclic dependency graph. Lower components stay mechanical — they read `workspace_id` from the ambient Context, which keeps the layering clean.
+    Each tier builds only on the tiers below it, forming an acyclic dependency graph. Lower components stay mechanical — they read the `workspace_id` carried on each request, which keeps the layering clean.
   </Accordion>
   <Accordion title="Group by bounded context" icon="object-group">
-    Related concerns live together: Identity, Tenancy, and Authorization form IAM; Config and Secrets share a context; Context and Observability are cross-cutting. Industry-standard groupings.
+    Related concerns live together: Identity, Tenancy, and Authorization form IAM; Config and Secrets belong together; Observability is cross-cutting. Industry-standard groupings.
   </Accordion>
   <Accordion title="Tenant isolation everywhere" icon="shield">
     Every request is scoped to its workspace by an app-level filter, backed by database row-level security, with the cache isolated by a workspace key prefix.
   </Accordion>
   <Accordion title="Types flow up" icon="arrow-up">
-    A thin shared kernel holds universal primitives (Context, IDs, base Event). Each component owns and exports its own contract DTOs; subtypes resolve via a `type` discriminator on the wire (CloudEvents-style).
+    A thin shared kernel holds universal primitives (IDs, base Event). Each component owns and exports its own contract DTOs; subtypes resolve via a `type` discriminator on the wire (CloudEvents-style).
   </Accordion>
   <Accordion title="Two complementary gates" icon="key">
     Identity & Access gates _capability_ (do you have a licence). The Policy Gate gates the _specific action_ at execution time. Together they cover both questions.

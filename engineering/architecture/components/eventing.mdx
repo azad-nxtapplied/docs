@@ -20,11 +20,11 @@ Eventing is the platform's internal event backbone. When a component changes sta
 
 ## State & storage
 
-Owns the **outbox** — events waiting to be delivered — and the bookkeeping of what has published. Because each event is written in the same transaction as the state change, it publishes exactly when that change commits, so events stay consistent with state. Every event carries its workspace and correlation id from Context.
+Owns the **outbox** — events waiting to be delivered — and the bookkeeping of what has published. Because each event is written in the same transaction as the state change, it publishes exactly when that change commits, so events stay consistent with state. Every event carries the request's workspace and correlation id.
 
 ## Dependencies
 
-Builds on [Data Access](/engineering/architecture/components/data-access) (Tier 0) and the cross-cutting [Context & Observability](/engineering/architecture/components/context-observability). Eventing transports events; consumers (the AI Auditor, evaluation jobs) own what they mean.
+Builds on [Data Access](/engineering/architecture/components/data-access) (Tier 0) and emits telemetry to the cross-cutting [Observability](/engineering/architecture/components/observability). Eventing transports events; consumers (the AI Auditor, evaluation jobs) own what they mean.
 
 ## Infra & deployment
 
