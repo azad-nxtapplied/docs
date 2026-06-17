@@ -6,23 +6,23 @@ icon: "route"
 ---
 
 <Note>
-  **Cross-cutting** — not layered; ambient, riding with every request and spanning every tier and band. Part of the [NXT Core platform](/engineering/architecture/nxt-core).
+  **Cross-cutting** — ambient, riding with every request and spanning every tier and band. Part of the [NXT Core architecture](/engineering/architecture).
 </Note>
 
-Two ambient concerns merged because both ride with every request.
+Two ambient concerns grouped together because both ride with every request.
 
 ## Context
 
-`correlation_id` · `workspace_id` · `principal` threaded through every call. This is a **correctness-critical carrier**: it is the scope [Data Access](/engineering/architecture/components/data-access) and [Configuration & Secrets](/engineering/architecture/components/configuration-secrets) read for tenant isolation, which is exactly why lower tiers never need to call [Identity & Access](/engineering/architecture/components/identity-access). It **must survive process hops** (API → worker, across the event bus).
+Carries the ambient request scope — `correlation_id`, `workspace_id`, and `principal` — through every call. This is the scope [Data Access](/engineering/architecture/components/data-access) and [Configuration & Secrets](/engineering/architecture/components/configuration-secrets) read to apply tenant isolation, so the lower tiers get their workspace from Context directly. It travels with the request across process hops (API → worker, and across the event bus).
 
 ## Observability
 
-Structured **logging, metrics, and traces** for system health — best-effort operational telemetry.
+Provides structured **logging, metrics, and traces** for system health — the operational telemetry that tells you how the platform is running.
 
-<Warning>
-  This is **ops telemetry, not decision evidence.** The immutable, hash-chained record of _why_ an action happened lives in the **AI Auditor** (Record plane), not here.
-</Warning>
+<Note>
+  Observability covers **system health**. The immutable, hash-chained record of _why_ an action happened lives in the **AI Auditor** (Record plane), which keeps the two concerns cleanly separated.
+</Note>
 
 ## Dependencies
 
-Observability is built on top of Context. Both are ambient and depend on nothing in the foundation tiers — they are read _by_ those tiers, not the other way around.
+Observability builds on Context. Both are ambient and read by the foundation tiers rather than depending on them.

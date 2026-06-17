@@ -145,18 +145,11 @@
             "group": "Architecture",
             "pages": [
               "engineering/architecture/index",
-              "engineering/architecture/nxt-core",
-              {
-                "group": "Foundation components",
-                "pages": [
-                  "engineering/architecture/components/identity-access",
-                  "engineering/architecture/components/configuration-secrets",
-                  "engineering/architecture/components/eventing",
-                  "engineering/architecture/components/data-access",
-                  "engineering/architecture/components/context-observability"
-                ]
-              },
-              "engineering/architecture/services-overview",
+              "engineering/architecture/components/identity-access",
+              "engineering/architecture/components/configuration-secrets",
+              "engineering/architecture/components/eventing",
+              "engineering/architecture/components/data-access",
+              "engineering/architecture/components/context-observability",
               "engineering/architecture/data-models"
             ]
           }
