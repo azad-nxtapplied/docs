@@ -1,0 +1,35 @@
+---
+title: "Data Access"
+sidebarTitle: "Data Access"
+description: "Tier 0 · the shared, safe way to talk to stateful backends — DB and cache."
+icon: "database"
+---
+
+<Note>
+  **Tier 0 · Foundation** — base layer, no internal dependencies. Part of the [NXT Core platform](/engineering/architecture/nxt-core).
+</Note>
+
+The shared, safe way to talk to stateful backends. **NOT a datastore** — every component owns its own tables/keyspace; this owns the connection plumbing for two backends: the **DB** (durable system of record) and the **cache** (ephemeral cache / locks / rate buckets).
+
+## Contract
+
+| Method | What it does |
+| --- | --- |
+| `get_session` | A safe, tenant-scoped handle to the database for this request |
+| `unit_of_work` | Run several writes as one all-or-nothing transaction |
+| `get_cache` | A tenant-scoped handle to the fast, temporary cache |
+| `lock` | Hold a short-lived lock so only one worker touches a resource at a time |
+| `run_migrations` | Apply pending schema changes |
+| `health` | Report whether the database and cache are reachable |
+
+## State & storage
+
+Plumbing, holds no business data; the only thing it persists is which schema changes have been applied. Every request is auto-scoped to its workspace (the cache follows the same rule and is never the source of truth).
+
+## Dependencies
+
+Sits at the very bottom; depends on nothing above it, only cross-cutting [Context & Observability](/engineering/architecture/components/context-observability).
+
+## Infra & deployment
+
+A relational DB + a cache/key-value store + a migration runner. Runs in-process inside the API and workers (it is on every hot path); one shared connection pool per process.

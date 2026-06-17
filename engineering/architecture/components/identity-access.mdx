@@ -1,0 +1,38 @@
+---
+title: "Identity & Access (IAM)"
+sidebarTitle: "Identity & Access"
+description: "Tier 2 · IAM — identity, tenancy, and coarse authorization in one bounded context."
+icon: "id-card"
+---
+
+<Note>
+  **Tier 2 · Foundation** — top of the foundation. Part of the [NXT Core platform](/engineering/architecture/nxt-core).
+</Note>
+
+The platform's **IAM** — one bounded context answering who is this, what do they belong to, and what may they do. Merged because the role assignment already lives on membership, so authorization is an internal lookup, not a cross-boundary call. **Coarse capability only**; the per-action autonomy gate is the Policy Gate.
+
+## Contract
+
+| Method | What it does |
+| --- | --- |
+| `authenticate` | Verify a credential (password, API key, service/agent token) and identify the caller |
+| `verify` | Validate an active session/token → who, which workspace, what role |
+| `issue / revoke` | Mint or invalidate sessions, tokens, API keys |
+| `membership` | Which workspaces a principal belongs to (and who belongs to a workspace) |
+| `can` | May this principal use this capability in this workspace? → allow / deny |
+
+## State & storage
+
+Owns account records (users, service/agent identities, sessions, API keys), tenancy records (orgs, workspaces, memberships + the role each carries), and the role→permission map. Credentials stored hashed/secured. **It defines the workspace** — the scope Data Access and Configuration read from Context originates here, which is why it sits above them.
+
+## Dependencies
+
+Persists via [Data Access](/engineering/architecture/components/data-access) (Tier 0); gets token-signing keys + IdP config from [Configuration & Secrets](/engineering/architecture/components/configuration-secrets) (Tier 1); emits identity events via [Eventing](/engineering/architecture/components/eventing) (Tier 1); plus [Context & Observability](/engineering/architecture/components/context-observability). Federated (OAuth) login: provider keys are synced in, but the interactive redirect/token-exchange rides the Integration Fabric.
+
+## Infra & deployment
+
+Relational DB (accounts + tenancy + roles) via Data Access, a cache for hot session/token lookups + revocation list + permission checks, an external IdP for federated login. In-process library — `verify` and `can` run on every request's hot path, so they must be fast and local.
+
+<Note>
+  **IAM vs the Policy Gate:** IAM gates _capability_ (do you have a licence). The Policy Gate gates the _specific action_ at execution time. Both can deny.
+</Note>

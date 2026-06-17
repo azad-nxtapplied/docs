@@ -47,25 +47,50 @@ a[nav-tabs-item] {
 
 /* ============================================================
    NXT Core architecture diagram — faithful port of the
-   standalone HTML. Everything is scoped under .nxt-arch so it
-   can never affect the rest of the docs. Hover tooltips are
-   pure CSS (no JS): any element with a data-tip attribute.
+   standalone HTML, themed to the Mintlify platform. Scoped
+   under .nxt-arch so it can never affect the rest of the docs.
+   Adapts to light/dark; accent uses the docs brand colour.
+   Hover tooltips are pure CSS (no JS) via the data-tip attr.
    ============================================================ */
 .nxt-arch {
-  --ink: #151516;
-  --slate: #36454f;
-  --muted: #9197a1;
+  /* light theme (default) */
+  --ink: #1a1c1e;
+  --slate: #4a5560;
+  --muted: #8b919c;
   --line: #e7e7ea;
   --line2: #d3d6e0;
   --panel: #fbfbfc;
-  --band: #f5f5f7;
+  --band: #f4f5f7;
   --card: #ffffff;
+  --accent: #166e3f;       /* docs primary */
+  --accent-ink: #ffffff;
+  --tip-bg: #1a1c1e;
+  --tip-fg: #f2f2f4;
+
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
   font-size: 13.5px;
   line-height: 1.4;
-  margin: 10px 0 28px;
+  margin: 12px 0 28px;
 }
+
+/* dark theme — Mintlify toggles a .dark class on <html> */
+:where(.dark) .nxt-arch,
+.dark .nxt-arch {
+  --ink: #e6e8ec;
+  --slate: #aeb6c1;
+  --muted: #7e8694;
+  --line: #2b2e35;
+  --line2: #3a3e47;
+  --panel: #15171c;
+  --band: #1b1e24;
+  --card: #21252e;
+  --accent: #26bd6c;       /* docs primary-light, brighter for dark */
+  --accent-ink: #0c1f15;
+  --tip-bg: #2c313c;
+  --tip-fg: #f2f2f4;
+}
+
 .nxt-arch * { box-sizing: border-box; }
 
 .nxt-arch .frame {
@@ -80,8 +105,8 @@ a[nav-tabs-item] {
   position: absolute;
   top: -15px;
   left: 28px;
-  background: var(--ink);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-ink);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -121,25 +146,48 @@ a[nav-tabs-item] {
 
 .nxt-arch .card {
   position: relative;
+  display: block;
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 11px;
   padding: 12px 13px;
   font-size: 13px;
   font-weight: 500;
+  color: var(--ink);
   flex: 1;
   min-width: 140px;
   transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s;
 }
 .nxt-arch .card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(20, 20, 30, 0.1);
+  box-shadow: 0 6px 18px rgba(20, 20, 30, 0.12);
   border-color: var(--slate);
   z-index: 30;
 }
+
+/* clickable cards (link to a component subpage) */
+.nxt-arch a.card {
+  text-decoration: none;
+  cursor: pointer;
+}
+.nxt-arch a.card:hover {
+  border-color: var(--accent);
+}
+.nxt-arch a.card::after {
+  content: "↗";
+  position: absolute;
+  top: 9px;
+  right: 11px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  opacity: 0.55;
+}
+.nxt-arch a.card:hover::after { opacity: 1; }
+
 .nxt-arch .api {
-  background: var(--ink);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-ink);
   border-radius: 9px;
   padding: 11px 14px;
   font-size: 13px;
@@ -150,11 +198,12 @@ a[nav-tabs-item] {
 .nxt-arch .dashed {
   border-style: dashed;
   color: var(--muted);
-  background: #fbfbfd;
+  background: transparent;
 }
 
 /* pure-CSS hover tooltip */
 .nxt-arch [data-tip] { cursor: help; }
+.nxt-arch a[data-tip] { cursor: pointer; }
 .nxt-arch [data-tip]:hover::after {
   content: attr(data-tip);
   position: absolute;
@@ -163,15 +212,15 @@ a[nav-tabs-item] {
   transform: translateX(-50%);
   width: max-content;
   max-width: 300px;
-  background: var(--ink);
-  color: #f2f2f4;
+  background: var(--tip-bg);
+  color: var(--tip-fg);
   font-size: 11.5px;
   font-weight: 400;
   line-height: 1.5;
   text-align: left;
   padding: 10px 12px;
   border-radius: 9px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
   z-index: 100;
   white-space: normal;
   pointer-events: none;
@@ -183,7 +232,9 @@ a[nav-tabs-item] {
   left: 50%;
   transform: translateX(-50%);
   border: 6px solid transparent;
-  border-top-color: var(--ink);
+  border-top-color: var(--tip-bg);
   z-index: 100;
   pointer-events: none;
 }
+/* clickable cards show the ↗ glyph instead of the tooltip arrow overlap */
+.nxt-arch a.card[data-tip]:hover::after { /* keep tooltip */ }

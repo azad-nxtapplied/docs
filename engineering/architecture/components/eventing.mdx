@@ -1,0 +1,31 @@
+---
+title: "Eventing"
+sidebarTitle: "Eventing"
+description: "Tier 1 · the internal event backbone with a transactional outbox."
+icon: "tower-broadcast"
+---
+
+<Note>
+  **Tier 1 · Foundation.** Part of the [NXT Core platform](/engineering/architecture/nxt-core).
+</Note>
+
+The platform's **internal event backbone**. When a component changes state it emits an event so the rest of the platform can react — delivered only if the change actually committed. Internal bus only; **not** external I/O (that's the Integration Fabric) and **not** the long-term record (that's the AI Auditor).
+
+## Contract
+
+| Method | What it does |
+| --- | --- |
+| `publish` | Emit an event as part of the current change; delivered only after that change commits |
+| `subscribe` | Register to receive events of a type, with automatic retry and de-duplication |
+
+## State & storage
+
+Owns the **outbox** (events waiting to be delivered) + publish bookkeeping. The guarantee: an event is written in the same transaction as the state change, so it publishes only if that change committed — no lost or phantom events. Every event carries its workspace + correlation id from Context.
+
+## Dependencies
+
+Writes the outbox through [Data Access](/engineering/architecture/components/data-access) (Tier 0), plus [Context & Observability](/engineering/architecture/components/context-observability). It only transports events — consumers (AI Auditor, eval jobs) own what they mean.
+
+## Infra & deployment
+
+An event bus / durable message stream + the outbox table (via Data Access). `publish` is an in-process library so it commits inside the caller's transaction; a small background relay drains the outbox and handles retries.
