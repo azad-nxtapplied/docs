@@ -1,0 +1,40 @@
+---
+title: "Data Adapter"
+sidebarTitle: "Data Adapter"
+description: "Tier 0 · the shared, safe way to reach stateful backends — DB and cache."
+icon: "database"
+---
+
+import { Verified } from "/snippets/verified.mdx";
+
+<Verified on="2026-06-21" />
+
+<Note>
+  **Tier 0 · Foundation** — the base of the platform; everything else builds on it. Part of the [NXT Core architecture](/engineering/architecture).
+</Note>
+
+Data Adapter is a thin shared library that every component uses to reach the two stateful backends the same way: **PostgreSQL** (the system of record) and **Redis** (cache, locks, and rate buckets). Each component owns its own tables and keyspace; Data Adapter owns how they are reached.
+
+It is built on adopted technology — SQLAlchemy 2, Postgres, Redis, and Flyway. What NXT writes is small and focused: the pooled session and transaction helpers, the cache/lock helpers, and the **base repository** that makes tenant scoping automatic.
+
+## Contract
+
+| Method | What it does |
+| --- | --- |
+| `session` | A pooled DB handle for the current request (read/write) |
+| `transaction` | Runs several writes as one all-or-nothing unit |
+| `cache` / `lock` / `rate_bucket` | Fast ephemeral storage, a short-lived distributed lock, and a token bucket for fairness |
+| `run_migrations` | Applies pending schema changes (Flyway, expand-contract) |
+| `health` | Reports whether DB and cache are reachable |
+
+## Tenant scoping
+
+Every repository call takes a `workspace_id` and applies it as a `WHERE workspace_id = :ws` filter. This is enforced once, in a **base repository class** that every repository extends, and covered by tests — so scoping is automatic and consistent across the platform.
+
+## Connection model
+
+The connection pool is per process and shared. Each request borrows a session for the span of one transaction and returns it, keeping the pool small and fast on every hot path. Append-only tables such as `executions` are granted `INSERT`/`SELECT` only at the database role level, so their immutability is guaranteed by Postgres itself.
+
+## Dependencies
+
+Sits at the base, so the rest of the foundation — [Configuration & Secrets](/engineering/architecture/components/configuration-secrets), [Eventing](/engineering/architecture/components/eventing), [Identity & Access](/engineering/architecture/components/identity-access) — builds on it. It emits telemetry to the cross-cutting [Observability](/engineering/architecture/components/observability) and runs in-process inside the API and workers.

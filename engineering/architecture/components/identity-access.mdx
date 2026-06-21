@@ -27,7 +27,7 @@ Owns the account records (users, service/agent identities, sessions, API keys), 
 
 ## Dependencies
 
-Builds on [Data Access](/engineering/architecture/components/data-access) (Tier 0); reads token-signing keys and IdP config from [Configuration & Secrets](/engineering/architecture/components/configuration-secrets) (Tier 1); publishes identity events via [Eventing](/engineering/architecture/components/eventing) (Tier 1); and emits telemetry to the cross-cutting [Observability](/engineering/architecture/components/observability). For federated (OAuth) login, provider keys are synced in and the interactive redirect and token-exchange ride the Integration Fabric.
+Builds on [Data Adapter](/engineering/architecture/components/data-adapter) (Tier 0); reads token-signing keys and IdP config from [Configuration & Secrets](/engineering/architecture/components/configuration-secrets) (Tier 1); publishes identity events via [Eventing](/engineering/architecture/components/eventing) (Tier 1); and emits telemetry to the cross-cutting [Observability](/engineering/architecture/components/observability). For federated (OAuth) login, provider keys are synced in and the interactive redirect and token-exchange ride the Integration Fabric.
 
 <Note>
   **Identity & Access and the Policy Gate are complementary.** IAM gates _capability_ (do you have a licence); the Policy Gate gates the _specific action_ at execution time. Together they answer both questions.
@@ -35,4 +35,4 @@ Builds on [Data Access](/engineering/architecture/components/data-access) (Tier 
 
 ## Infra & deployment
 
-A relational DB (accounts, tenancy, roles) via Data Access, and a cache for hot session/token lookups, the revocation list, and permission checks, plus an external IdP for federated login. In-process library — `verify` and `can` run on every request's hot path, so they stay fast and local.
+A relational DB (accounts, tenancy, roles) via Data Adapter, and a cache for hot session/token lookups, the revocation list, and permission checks, plus an external IdP for federated login. In-process library — `verify` and `can` run on every request's hot path, so they stay fast and local.

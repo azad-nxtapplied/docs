@@ -1,0 +1,5 @@
+export const Verified = ({ by, on }) => (
+  <span className="nxt-verified">
+    Verified{on ? ` · ${on}` : ""}{by ? ` · ${by}` : ""}
+  </span>
+);

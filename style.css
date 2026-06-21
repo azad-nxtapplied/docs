@@ -31,6 +31,32 @@ a[nav-tabs-item] {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ============================================================
+   "Verified" badge — a blue pill placed at the top of a page
+   whose content has been reviewed and confirmed by a human.
+   Light/dark handled via the .dark class, matching the site.
+   ============================================================ */
+.nxt-verified {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 11px 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.5;
+  color: #1d4ed8;
+  background: rgba(37, 99, 235, 0.12);
+  border: 1px solid rgba(37, 99, 235, 0.4);
+}
+.nxt-verified::before { content: "✓"; font-weight: 800; }
+.dark .nxt-verified {
+  color: #7aa2f7;
+  background: rgba(37, 99, 235, 0.18);
+  border-color: rgba(37, 99, 235, 0.45);
+}
+
 .kb-feature-card {
   background-color: rgb(var(--foreground-light, 17 24 39));
 }

@@ -1,22 +1,66 @@
 ---
 title: "Observability"
 sidebarTitle: "Observability"
-description: "Cross-cutting · operational telemetry for system health."
+description: "Cross-cutting · operational telemetry — logs, metrics, and traces for system health."
 icon: "chart-line"
 ---
+
+import { Verified } from "/snippets/verified.mdx";
+
+<Verified on="2026-06-21" />
 
 <Note>
   **Cross-cutting** — spans every tier and band. Part of the [NXT Core architecture](/engineering/architecture).
 </Note>
 
-Observability provides structured **logging, metrics, and traces** for system health — the operational telemetry that shows how the platform is running.
+Observability shows **how the platform is running**: the operational telemetry — **logs, metrics, and traces** — that answers "is the system healthy, fast, and within budget right now?" It is built on adopted **OpenTelemetry**: every deployable is instrumented with the OTel SDK and exports over OTLP, an open standard. What NXT adds is thin and consistent: one initialization, one set of conventions, and the rule that every signal carries the request's `workspace_id` and `correlation_id`.
 
-Each log line, metric, and trace is tagged with the request's `workspace_id` and `correlation_id` (the ids passed along with every call), so a single request can be followed across services and background workers.
+Because it speaks a standard, Observability is **portable by design**: it emits the same signals in every deployment and plugs into whatever monitoring each customer environment already runs.
 
-<Note>
-  Observability covers **system health**. The immutable, hash-chained record of _why_ an action happened lives in the **AI Auditor** (Record plane), which keeps the two concerns cleanly separated.
-</Note>
+## The three signals
+
+| Signal | What it captures | Emitted as |
+| --- | --- | --- |
+| **Logs** | Structured JSON events — one line per meaningful step, with level, message, and typed fields (a request started, a retry fired, a connector was slow). | OTLP logs |
+| **Metrics** | Numeric time series for health and capacity — request rate, latency histograms, error rate, queue depth, connection-pool saturation, connector health, cache hit rate. | OTLP metrics |
+| **Traces** | Distributed spans that follow one request across services — API → worker → skill runtime — with timing for each hop, model call, and DB query. | OTLP traces |
+
+Together they give the three operational questions one answer each: **metrics** say *something is wrong*, **traces** say *where*, and **logs** say *what exactly*.
+
+## Portable across customer environments
+
+The platform deploys self-contained into each customer's environment, and Observability is built to fit whatever they already operate. The export target is **configuration, not code**: a deployment points the OTLP collector at the customer's stack — Datadog, Grafana, Elastic, Splunk, a cloud-native monitor — and the same signals flow there unchanged. For customers without an existing stack, NXT bundles an OSS default. Either way the instrumentation, the conventions, and the `workspace_id` / `correlation_id` tagging stay identical, so the platform behaves the same everywhere and the customer keeps their own pane of glass.
+
+## Context & correlation
+
+Two ids make a distributed request followable, and both ride every signal:
+
+- **`correlation_id`** — minted at the edge (the [Platform API](/engineering/architecture#band-2--ai-suites)) when a request first arrives, then carried through the whole journey: across `await` boundaries, into background work via [Eventing](/engineering/architecture/components/eventing), and into the skill runtime. One id ties the inbound API call, the worker job it spawned, and the model call inside a skill into a single trace.
+- **`workspace_id`** — the tenant scope ([resolved in Identity & Access](/engineering/architecture/components/identity-access)), tagged on every log, metric, and trace so health and cost can be sliced per workspace.
+
+Propagation is automatic: a context-propagation middleware reads or mints the ids on each request and stores them in a context variable, and the logging, metrics, and tracing layers pick them up — so an engineer never threads them by hand, and a worker started from a queue message inherits the same ids as the API call that enqueued it.
+
+## What each deployable emits
+
+| Deployable | Representative signals |
+| --- | --- |
+| `app/api` | Request rate / latency / errors per route; auth outcomes; pool saturation; per-request traces |
+| `app/worker` | Queue depth and lag per class (interactive / standard / batch); job duration; retry and dead-letter counts |
+| `app/skill_runtime` | Skill step timings; model-call latency (spans, not content); tool-call outcomes |
+| `app/exporter` | Outbound export health and lag for the cross-perimeter quality stream |
+
+## Dashboards & alerting
+
+Because metrics and traces land in the customer's own stack, dashboards and alerts live where their operators already work — throughput and latency SLOs (interactive reads ≤300 ms p95, live skill calls ≤3 s p95), queue backpressure, error-rate spikes, and connector health, all on their existing on-call and change process. NXT also ships a portable starter set of dashboards (Grafana, or Perses for license-strict customers) so a fresh deployment has the standard views from day one, ready to import into whatever they run.
+
+## What telemetry records
+
+Telemetry records operational facts — timings, rates, counts, and structure (which route, which model, how long) — keeping the system's plumbing visible. Business content and secrets stay in their governed homes (the case record, evidence, and [Configuration & Secrets](/engineering/architecture/components/configuration-secrets)), so a log line or a trace shows the shape of work without its contents.
+
+## Runs out of the way
+
+Telemetry buffers in-process and exports asynchronously to a local collector, so the system it watches stays fast on every hot path. The OTel SDK samples traces and batches exports, keeping overhead small and steady under load.
 
 ## Dependencies
 
-Best-effort and standalone. It reads the `workspace_id` and `correlation_id` already on each request to tag its output; nothing in the foundation depends on it.
+Standalone. It reads the `workspace_id` and `correlation_id` already present on each request to tag its output, so it runs alongside every component without any of them depending on it. It runs as an in-process OTel SDK in every deployable, exporting to a local collector that fans out to the metrics, logs, and trace stores.

@@ -125,13 +125,13 @@ NXT Core is an AI-native platform that runs inside the customer's environment. I
 
             <div className="glabel" style={{ margin: "10px 0 4px" }}>TIER 1 · PLATFORM PRIMITIVES</div>
             <div className="row">
-              <a className="card" href="/engineering/architecture/components/configuration-secrets" data-tip="Serves per-workspace operational config, feature flags, and secret bindings — connector credentials and signing/encryption keys synced from a secret manager. Built on Data Access.">Configuration &amp; Secrets</a>
-              <a className="card" href="/engineering/architecture/components/eventing" data-tip="Provides event-bus connection and publish primitives with a transactional outbox, so a state change and its event commit together. Built on Data Access.">Eventing</a>
+              <a className="card" href="/engineering/architecture/components/configuration-secrets" data-tip="Serves per-workspace operational config, feature flags, and secret bindings — connector credentials and signing/encryption keys synced from a secret manager. Built on Data Adapter.">Configuration &amp; Secrets</a>
+              <a className="card" href="/engineering/architecture/components/eventing" data-tip="Provides event-bus connection and publish primitives with a transactional outbox, so a state change and its event commit together. Built on Data Adapter.">Eventing</a>
             </div>
 
             <div className="glabel" style={{ margin: "10px 0 4px" }}>TIER 0 · BASE (no internal dependencies)</div>
             <div className="row">
-              <a className="card" href="/engineering/architecture/components/data-access" data-tip="The shared, safe way to reach stateful backends. For the DB (system of record): engine, pool, tenant-scoped sessions (workspace_id carried on the request plus row-level security), transactions, and the migration runner. For the cache (ephemeral): pooled client, key-prefix isolation, distributed locks, and rate buckets. Each component owns its own tables and keyspace.">Data Access</a>
+              <a className="card" href="/engineering/architecture/components/data-adapter" data-tip="A thin shared library that reaches the two stateful backends the same way. For the DB (system of record): engine, pool, sessions, transactions, the migration runner, and a base repository that applies workspace_id on every call. For the cache (ephemeral): pooled client, distributed locks, and rate buckets. Each component owns its own tables and keyspace.">Data Adapter</a>
             </div>
 
             <div className="glabel" style={{ margin: "10px 0 4px" }}>CROSS-CUTTING (spans every tier and band)</div>
@@ -222,7 +222,7 @@ The layered foundation. Each component below has its own contract page.
 | 2 | **[Identity & Access](/engineering/architecture/components/identity-access)** | Identity, tenancy, and coarse authorization in one bounded context — who, where, and what they may do. |
 | 1 | **[Configuration & Secrets](/engineering/architecture/components/configuration-secrets)** | Per-workspace config, feature flags, and secret bindings, synced from a secret manager. |
 | 1 | **[Eventing](/engineering/architecture/components/eventing)** | The internal event backbone — publish primitives with a transactional outbox. |
-| 0 | **[Data Access](/engineering/architecture/components/data-access)** | The shared, safe way to reach the DB (system of record) and cache (ephemeral). |
+| 0 | **[Data Adapter](/engineering/architecture/components/data-adapter)** | The shared, safe way to reach the DB (system of record) and cache (ephemeral). |
 | — | **[Observability](/engineering/architecture/components/observability)** | Structured logging, metrics, and traces for system health (cross-cutting). |
 
 ## Design principles

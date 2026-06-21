@@ -150,7 +150,7 @@
               "engineering/architecture/components/identity-access",
               "engineering/architecture/components/configuration-secrets",
               "engineering/architecture/components/eventing",
-              "engineering/architecture/components/data-access",
+              "engineering/architecture/components/data-adapter",
               "engineering/architecture/components/observability",
               "engineering/architecture/data-models"
             ]

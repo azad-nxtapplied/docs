@@ -24,8 +24,8 @@ Owns the **outbox** — events waiting to be delivered — and the bookkeeping o
 
 ## Dependencies
 
-Builds on [Data Access](/engineering/architecture/components/data-access) (Tier 0) and emits telemetry to the cross-cutting [Observability](/engineering/architecture/components/observability). Eventing transports events; consumers (the AI Auditor, evaluation jobs) own what they mean.
+Builds on [Data Adapter](/engineering/architecture/components/data-adapter) (Tier 0) and emits telemetry to the cross-cutting [Observability](/engineering/architecture/components/observability). Eventing transports events; consumers (the AI Auditor, evaluation jobs) own what they mean.
 
 ## Infra & deployment
 
-An event bus / durable message stream plus the outbox table (via Data Access). `publish` is an in-process library so it commits inside the caller's transaction, and a small background relay drains the outbox and handles retries.
+An event bus / durable message stream plus the outbox table (via Data Adapter). `publish` is an in-process library so it commits inside the caller's transaction, and a small background relay drains the outbox and handles retries.
