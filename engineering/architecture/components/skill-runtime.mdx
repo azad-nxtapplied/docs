@@ -1,0 +1,44 @@
+---
+title: "Skill Runtime"
+sidebarTitle: "Skill Runtime"
+description: "Band 1 · Execution — runs one skill, end to end, under an autonomy envelope."
+icon: "workflow"
+---
+
+import { Verified } from "/snippets/verified.mdx";
+
+<Verified on="2026-06-21" />
+
+<Note>
+  **Band 1 · Kernel · Execution plane.** Part of the [NXT Core architecture](/engineering/architecture).
+</Note>
+
+The Skill Runtime runs **one skill** — a bounded, multi-step unit of work — from start to finish. A skill is rarely a single model call: it retrieves context, calls a model, invokes a tool, and checks a gate. The Runtime drives those steps, enforces how far the skill may go on its own, and records each step as it runs. It is the orchestrator of the execution plane, and the governed evolution of NXT's existing AgentCore framework.
+
+## What it owns
+
+The Runtime owns the execution of a single skill: stepping through the skill's defined plan, enforcing the autonomy envelope before each step, and keeping the run durable from start to finish. The skill itself is an authored, versioned artifact; the Runtime is the engine that runs it — the same way in every deployment.
+
+## The autonomy envelope
+
+Before each step, the Runtime checks it against the **autonomy envelope** computed for the run — the maximum tier it may reach, the tools it may use, and the spend it may consume. The envelope is enforced, not advisory: a step outside it is refused before it runs, so a skill can never quietly exceed what it has earned.
+
+## Durable by design
+
+A skill run survives waiting and restarts. When a step must wait — for a human approval or an outside response — the Runtime **parks**: it persists where it is and frees the worker. When the signal arrives, it **resumes** from the next step. A crash mid-skill picks up from the last completed step rather than starting over, and because side effects are idempotent and recorded, nothing is double-sent or double-charged.
+
+## What it leaves to others
+
+The Runtime drives the work but does not do every job itself — each step is handed to the component that owns it:
+
+- it reaches models only through the [Model Gateway](/engineering/architecture/components/model-gateway),
+- it draws context and evidence only from [AI Memory](/engineering/architecture/components/ai-memory),
+- it touches the outside world only through the [Integration Fabric](/engineering/architecture/components/integration-fabric),
+- it **asks** — never decides — governance, via the [Policy Gate](/engineering/architecture/components/policy-gate) and [Autonomy Controller](/engineering/architecture/components/autonomy-controller),
+- and every step it runs becomes a recorded execution in the [AI Auditor](/engineering/architecture/components/ai-auditor).
+
+This is the middle rung of the execution ladder — *one model call · one skill · one case* — and an embedded (Way 2) call stops here.
+
+## Dependencies
+
+Invoked by the Agent Case Framework (Band 2) for a case, or directly for an embedded call. It keeps its run state and work queue on the [Data Adapter](/engineering/architecture/components/data-adapter) — run state in the database, the queue and per-run locks in the cache — and calls across the execution and governance planes as above.

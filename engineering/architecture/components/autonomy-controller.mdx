@@ -1,0 +1,36 @@
+---
+title: "Autonomy Controller"
+sidebarTitle: "Autonomy Controller"
+description: "Band 1 · Governance — how much autonomy has this capability earned?"
+icon: "gauge"
+---
+
+import { Verified } from "/snippets/verified.mdx";
+
+<Verified on="2026-06-21" />
+
+<Note>
+  **Band 1 · Kernel · Governance plane.** Part of the [NXT Core architecture](/engineering/architecture).
+</Note>
+
+The Autonomy Controller answers the **standing** question: *how much autonomy has this capability earned?* It turns a capability's track record into the **envelope** the Skill Runtime enforces — the maximum tier it may reach, the tools it may use, and the spend it may consume.
+
+## What it owns
+
+Per capability and per tenant, the Controller owns the **autonomy tier** — draft → review → sample → auto — and computes the envelope each run must stay inside.
+
+## Earned, not set
+
+Autonomy is a status earned on evidence, not a switch someone flips. A tier is **raised only through an approved, recorded promotion**, backed by evaluation evidence, and **lowered automatically** the moment quality slips. So more autonomy is always something a capability has demonstrably earned, and a regression pulls it back without waiting for anyone to notice.
+
+## The envelope it computes
+
+For each run, the Controller resolves how far the capability may go and hands that envelope to the [Skill Runtime](/engineering/architecture/components/skill-runtime), which enforces it step by step. The Controller decides the limit; the Runtime keeps within it.
+
+## Standing, by design
+
+The Autonomy Controller answers how far a capability is trusted in general. Whether **one specific action** may happen now is the situational question answered by the [Policy Gate](/engineering/architecture/components/policy-gate) — both must agree before an action runs unattended.
+
+## Dependencies
+
+Queried by the [Skill Runtime](/engineering/architecture/components/skill-runtime) for a run's envelope. It reads earned trust from the [Learning Engine](/engineering/architecture/components/learning-engine); promotions are approved by a human (in the Cockpit, Band 2); and every tier change is recorded in the [AI Auditor](/engineering/architecture/components/ai-auditor).

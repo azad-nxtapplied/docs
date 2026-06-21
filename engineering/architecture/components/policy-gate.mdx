@@ -1,0 +1,36 @@
+---
+title: "Policy Gate"
+sidebarTitle: "Policy Gate"
+description: "Band 1 · Governance — may this specific action happen, now?"
+icon: "shield-check"
+---
+
+import { Verified } from "/snippets/verified.mdx";
+
+<Verified on="2026-06-21" />
+
+<Note>
+  **Band 1 · Kernel · Governance plane.** Part of the [NXT Core architecture](/engineering/architecture).
+</Note>
+
+The Policy Gate answers the **situational** question: *may this specific action happen, right now?* It runs **first**, before any side effect, and returns a clear **allow / deny / require-approval** by evaluating the customer's policy as executable rules.
+
+## What it owns
+
+The Gate owns the evaluation of the customer's policies — approval matrices, thresholds, escalation routes, and segregation-of-duties rules — at defined checkpoints before a side effect. It is the place those rules are actually enforced, not merely written down.
+
+## A deterministic decision
+
+The Gate is a **pure function**: the same inputs always produce the same verdict. Every evaluation is itself recorded, so any decision the platform made can be replayed and explained — *why was this allowed, why did that need approval* — from the rules that were in force.
+
+## Policy as versioned rules
+
+Policies are versioned, executable rule sets. The **rules** travel with the playbook; the **values** (a refund ceiling, an approval threshold) bind per workspace at deployment. So the same governed logic runs everywhere, tuned to each customer's limits without changing the logic itself.
+
+## Situational, by design
+
+The Policy Gate decides whether **this action** may happen now. How far a capability is trusted to act on its own is a separate, standing question answered by the [Autonomy Controller](/engineering/architecture/components/autonomy-controller) — both hold before an action proceeds unattended.
+
+## Dependencies
+
+Called by the [Skill Runtime](/engineering/architecture/components/skill-runtime) before any side effect, and by the [Integration Fabric](/engineering/architecture/components/integration-fabric) before a handoff. It reads versioned policy through the [Data Adapter](/engineering/architecture/components/data-adapter) and logs every decision to the [AI Auditor](/engineering/architecture/components/ai-auditor).

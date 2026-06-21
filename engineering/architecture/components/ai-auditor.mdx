@@ -1,0 +1,36 @@
+---
+title: "AI Auditor"
+sidebarTitle: "AI Auditor"
+description: "Band 1 · Record — the immutable record of everything that happened."
+icon: "scroll-text"
+---
+
+import { Verified } from "/snippets/verified.mdx";
+
+<Verified on="2026-06-21" />
+
+<Note>
+  **Band 1 · Kernel · Record plane.** Part of the [NXT Core architecture](/engineering/architecture).
+</Note>
+
+The AI Auditor is the **immutable, hash-chained record** of every meaningful action — by a model, a system, or a human. It is named an auditor, not a log, because it does more than store events: it reconstructs the story of a case, verifies its own chain, and stands as evidence.
+
+## What it owns
+
+The Auditor owns the append-only ledger, the human-readable **journey** of each case, and the packaged **audit exports** — timeline, approvals, evidence bundle, change log. The record is produced as a by-product of doing the work, not assembled afterward.
+
+## The core invariant
+
+The platform's most important rule lives here: **nothing changes state or causes a side effect except through a recorded execution.** Every component writes to the Auditor through one enforced path, so the record is complete by construction — there is no way to act without leaving a trace.
+
+## A record that testifies
+
+Because the ledger is hash-chained, the Auditor can verify it has not been altered, and because it captures each step in order, it can replay the exact journey of a case. When someone later asks *"why did the platform do this?"*, the answer is primary evidence the platform generated while simply doing its job.
+
+## What it records, and what it leaves to others
+
+The Auditor records *what happened*; it never decides and never acts. It captures the events; *what the AI knew* when it acted lives next door in [AI Memory](/engineering/architecture/components/ai-memory), and the two together answer any question of why.
+
+## Dependencies
+
+Written by every component as the single record path for state changes and side effects. The IP here is the hash-chain, the single-write-path invariant, and the journey and export semantics; the storage beneath is adopted — append-only tables via the [Data Adapter](/engineering/architecture/components/data-adapter) and the event backbone via [Eventing](/engineering/architecture/components/eventing), scoped per workspace by [IAM](/engineering/architecture/components/iam).

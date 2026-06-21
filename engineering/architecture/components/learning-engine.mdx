@@ -1,0 +1,36 @@
+---
+title: "Learning Engine"
+sidebarTitle: "Learning Engine"
+description: "Band 1 · Feedback — how it gets better, governedly."
+icon: "trending-up"
+---
+
+import { Verified } from "/snippets/verified.mdx";
+
+<Verified on="2026-06-21" />
+
+<Note>
+  **Band 1 · Kernel · Feedback plane.** Part of the [NXT Core architecture](/engineering/architecture).
+</Note>
+
+The Learning Engine is **how the platform gets better, every cycle** — governedly. It captures corrections and outcomes, turns them into proposed improvements, and computes the earned trust that autonomy is built on. It is the "run" NXT operates as a service across every deployment.
+
+## What it owns
+
+The Engine owns the capture of **corrections, overrides, and outcomes** as structured signals; their curation into **datasets and golden-set candidates**; the **proposals** for better prompts, policies, and playbooks; and the computation of **earned trust** per capability.
+
+## It proposes, it never ships silently
+
+Every improvement the Learning Engine proposes is released **only through the Evaluation Engine's gates**. It can suggest a better prompt, but it cannot put that prompt into production on its own — the change must first prove itself against the golden set. Improvement and governance stay coupled.
+
+## It turns track record into trust
+
+As good outcomes accumulate, the Engine computes a capability's **earned trust** — the evidence the [Autonomy Controller](/engineering/architecture/components/autonomy-controller) reads when deciding whether a capability has earned more autonomy. This is the loop that makes autonomy something earned rather than configured.
+
+## The run, operated from outside
+
+This is the engine NXT operates across all deployments as the ongoing quality cycle — curating golden sets, evolving prompts and playbooks — working from quality signals, never from business content.
+
+## Dependencies
+
+Consumes correction signals from the [AI Auditor](/engineering/architecture/components/ai-auditor) stream and from human actions in the Workspace (Band 2); routes every proposed change through the [Evaluation Engine](/engineering/architecture/components/evaluation-engine); and feeds earned trust to the [Autonomy Controller](/engineering/architecture/components/autonomy-controller). It runs as background and batch jobs.

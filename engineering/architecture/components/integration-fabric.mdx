@@ -1,0 +1,46 @@
+---
+title: "Integration Fabric"
+sidebarTitle: "Integration Fabric"
+description: "Band 1 · Execution — the one place the platform touches the outside world."
+icon: "cable"
+---
+
+import { Verified } from "/snippets/verified.mdx";
+
+<Verified on="2026-06-21" />
+
+<Note>
+  **Band 1 · Kernel · Execution plane.** Part of the [NXT Core architecture](/engineering/architecture).
+</Note>
+
+The Integration Fabric is the **single place the platform touches the outside world** — the customer's mailboxes, systems, and APIs. Everything coming in and everything going out passes through it, behind one connector interface, so intake, reads, and write-backs are handled the same governed way wherever the data comes from or goes.
+
+## What it owns
+
+The Fabric owns all inbound and outbound I/O, organized into three connector tiers:
+
+| Tier | What it does |
+| --- | --- |
+| **Ingestion** | Brings work in — email, webhooks, uploads |
+| **Reference reads** | Reads typed data from the customer's systems, with a freshness contract |
+| **Handoffs** | Writes back to the customer's systems — idempotent and recorded |
+
+## Fresh reads, by contract
+
+Every reference read carries a **freshness contract**. If the data is older than its contract allows, the Fabric raises a visible exception rather than letting a decision rest on stale data, and the freshness of what was read is recorded alongside the decision that used it.
+
+## Safe handoffs
+
+Write-backs are **idempotency-keyed**, so a retry never acts twice — an email is never sent twice, a record never written twice. When something downstream fails, it degrades into a visible exception and the work continues under human review rather than failing silently.
+
+## The customer's systems stay the system of record
+
+The Fabric reaches into the customer's systems and treats them as the source of truth; it never builds a shadow copy of their data. Every other component stays inside the platform and reaches the outside **only** through the Fabric — so I/O has one well-governed door.
+
+## Portable across customer environments
+
+The platform deploys self-contained into each customer's environment, and the Fabric connects to **whatever systems that environment runs** through connector adapters behind one interface. Which mailbox, which ERP, which API is configuration — credentials come from [Configuration & Secrets](/engineering/architecture/components/configuration-secrets) — so the same skills run unchanged against different customers' systems.
+
+## Dependencies
+
+Called by the [Skill Runtime](/engineering/architecture/components/skill-runtime) as the transport for a skill's reads and sends, and by intake for ingestion. It reads connector credentials from [Configuration & Secrets](/engineering/architecture/components/configuration-secrets), runs every call inside a recorded execution in the [AI Auditor](/engineering/architecture/components/ai-auditor), and uses the [Data Adapter](/engineering/architecture/components/data-adapter) for idempotency keys, rate buckets, and retries.

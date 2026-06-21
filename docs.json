@@ -147,11 +147,30 @@
               "engineering/architecture/index",
               "engineering/architecture/nxt-core-architecture",
               "engineering/architecture/technical-architecture",
-              "engineering/architecture/components/iam",
-              "engineering/architecture/components/configuration-secrets",
-              "engineering/architecture/components/eventing",
-              "engineering/architecture/components/data-adapter",
-              "engineering/architecture/components/observability",
+              {
+                "group": "Kernel (Band 1)",
+                "pages": [
+                  "engineering/architecture/components/model-gateway",
+                  "engineering/architecture/components/skill-runtime",
+                  "engineering/architecture/components/integration-fabric",
+                  "engineering/architecture/components/policy-gate",
+                  "engineering/architecture/components/autonomy-controller",
+                  "engineering/architecture/components/ai-auditor",
+                  "engineering/architecture/components/ai-memory",
+                  "engineering/architecture/components/evaluation-engine",
+                  "engineering/architecture/components/learning-engine"
+                ]
+              },
+              {
+                "group": "Foundation (Platform Core)",
+                "pages": [
+                  "engineering/architecture/components/iam",
+                  "engineering/architecture/components/eventing",
+                  "engineering/architecture/components/configuration-secrets",
+                  "engineering/architecture/components/data-adapter",
+                  "engineering/architecture/components/observability"
+                ]
+              },
               "engineering/architecture/data-models"
             ]
           },

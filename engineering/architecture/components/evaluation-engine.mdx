@@ -1,0 +1,36 @@
+---
+title: "Evaluation Engine"
+sidebarTitle: "Evaluation Engine"
+description: "Band 1 · Feedback — how good it is, on evidence."
+icon: "target"
+---
+
+import { Verified } from "/snippets/verified.mdx";
+
+<Verified on="2026-06-21" />
+
+<Note>
+  **Band 1 · Kernel · Feedback plane.** Part of the [NXT Core architecture](/engineering/architecture).
+</Note>
+
+The Evaluation Engine measures **how good the AI is, on evidence**. It scores behaviour against known-correct reference cases, gates every change before it ships, and watches live traffic for drift. It produces the evidence that the word "earned" refers to when autonomy is earned.
+
+## What it owns
+
+The Engine owns the **golden datasets** (curated reference cases with known-correct outcomes), the **release gates** every change must pass, and **drift detection** on live traffic.
+
+## It gates every change
+
+No prompt, policy, knowledge version, or playbook ships without passing its declared thresholds against the golden set. A proposed change is run against the reference cases and **blocked if quality regresses** — which is what makes "no silent changes" a property of the platform rather than a promise.
+
+## It watches live quality
+
+Beyond release, the Engine scores live work and detects drift, and human corrections — an edited draft, an overridden decision — become quality signals. So quality is measured continuously, not just at the moment something ships.
+
+## It measures, it doesn't change
+
+The Evaluation Engine produces the evidence; it does not change behaviour itself. The [Learning Engine](/engineering/architecture/components/learning-engine) proposes the improvements, and the [Autonomy Controller](/engineering/architecture/components/autonomy-controller) turns the evidence into how much autonomy is allowed.
+
+## Dependencies
+
+Reads outputs and outcomes from the [AI Auditor](/engineering/architecture/components/ai-auditor) stream; gates proposed changes both in the build pipeline and at per-environment promotion; and feeds scores to the [Learning Engine](/engineering/architecture/components/learning-engine) and the [Autonomy Controller](/engineering/architecture/components/autonomy-controller). It runs largely as background jobs on an adopted evaluation substrate, with the governance on top kept as NXT's.

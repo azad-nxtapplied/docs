@@ -1,0 +1,44 @@
+---
+title: "AI Memory"
+sidebarTitle: "AI Memory"
+description: "Band 1 · Record — what the AI draws on: knowledge, context, and evidence."
+icon: "brain"
+---
+
+import { Verified } from "/snippets/verified.mdx";
+
+<Verified on="2026-06-21" />
+
+<Note>
+  **Band 1 · Kernel · Record plane.** Part of the [NXT Core architecture](/engineering/architecture).
+</Note>
+
+AI Memory is **what the AI draws on**. It holds three governed things — the **knowledge base** (curated content that shapes behaviour), **context assembly** (the service that composes what a model sees for a task), and the **evidence store** (the documents and artifacts behind a decision) — so that what the AI knew at any moment is always governed and recorded.
+
+## What it owns
+
+| Holding | What it is |
+| --- | --- |
+| **Knowledge base** | Versioned, curated content — procedures, regulatory text, billing rules — activated only through evaluation gates |
+| **Context assembly** | The service that composes case data, evidence, reference data, and knowledge for a task — under the caller's entitlements, and recorded |
+| **Evidence store** | The documents and artifacts behind a decision — content-addressed, immutable, retention-policied, with field-level provenance |
+
+## Governed knowledge
+
+The knowledge base is versioned, and a new version becomes active **only after it passes the evaluation gates**. So the AI always works from approved sources, and the exact knowledge version behind a decision is known.
+
+## Context assembled and recorded
+
+When a skill needs context, AI Memory composes it — the case data, the relevant evidence, reference data, and knowledge the task calls for — limited to what the caller is entitled to see, and it **records what it composed**. That recorded composition is what makes the question *"what did the AI know when it decided?"* answerable, exactly, for every decision.
+
+## Evidence with provenance
+
+Documents and artifacts are kept in the evidence store, content-addressed and immutable, each carrying where it came from down to the field. A decision can always be traced back to the evidence it rested on.
+
+## What it leaves to others
+
+AI Memory **provides and records** what the AI may see; it does not act on it. The [Skill Runtime](/engineering/architecture/components/skill-runtime) orchestrates the steps, the [Model Gateway](/engineering/architecture/components/model-gateway) makes the calls, and the [AI Auditor](/engineering/architecture/components/ai-auditor) records *what happened* — AI Memory records *what was known*. Together they answer every "why."
+
+## Dependencies
+
+Called by the [Skill Runtime](/engineering/architecture/components/skill-runtime) to assemble context, and it uses the [Model Gateway](/engineering/architecture/components/model-gateway) for embeddings. The IP is the governed knowledge versioning, the recorded context, and the provenance; the storage beneath is adopted — the [Data Adapter](/engineering/architecture/components/data-adapter) with pgvector for retrieval, plus the customer's object store for evidence. New knowledge versions activate only after passing the [Evaluation Engine](/engineering/architecture/components/evaluation-engine).

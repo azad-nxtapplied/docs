@@ -1,0 +1,44 @@
+---
+title: "Model Gateway"
+sidebarTitle: "Model Gateway"
+description: "Band 1 · Execution — the single governed door to every model."
+icon: "route"
+---
+
+import { Verified } from "/snippets/verified.mdx";
+
+<Verified on="2026-06-21" />
+
+<Note>
+  **Band 1 · Kernel · Execution plane.** Part of the [NXT Core architecture](/engineering/architecture).
+</Note>
+
+The Model Gateway is the **single governed door to every model** the platform uses — commercial LLMs, open-source models, and NXT-trained ML models such as rankers and classifiers. Every model call passes through it, so routing, safety, caching, and cost all happen in one place and the same way for every model.
+
+## What it owns
+
+The Gateway owns *how* a model is reached, not *what* is asked of it: resolving a model alias to a specific pinned version, routing in-region with provider and backend fallback, screening each call for safety, caching where it helps, and accounting for every token and every cost.
+
+## One door, every model
+
+Callers ask for a model by **alias** — `drafter`, `classifier`, `extractor` — never a raw provider endpoint. The Gateway resolves the alias to a specific, version-pinned model behind one unified API, whether that model is a commercial LLM, an open-source model, the customer's own subscription or fine-tuned model, or an NXT-trained model served in-house. Upgrading or swapping a model is a change behind the alias, not in the calling code, and the version that produced a result is always recorded.
+
+## Security & data protection
+
+Because every model call goes through one place, that place is where data protection is enforced. Calls are screened for PII and sensitive content before they leave, responses are moderated on the way back, and routing stays in-region (EU by default) so data never crosses a boundary it shouldn't. Provider access is arranged so prompts and responses are **not retained by the provider and not used to train its models**. Every call is governed by the caller's entitlements, so a model only ever sees what the caller is allowed to send.
+
+## Caching
+
+Repeated and near-repeated calls are served from a cache, scoped per workspace so one tenant's results are never visible to another. Caching cuts both latency and cost — the same question never pays for the same answer twice — without the caller having to manage it.
+
+## Cost & usage, per call
+
+The Gateway captures tokens, latency, and cost for every call and attributes them to the case that caused it. Cost per case is therefore **measured, not estimated** — the basis for economic transparency, spend caps, and usage metering.
+
+## Portable across customer environments
+
+The platform deploys self-contained into each customer's environment, and the Gateway binds to **whatever model providers that environment allows** — a commercial provider, an EU-region deployment of one, the customer's own model subscription, or NXT-served models. Which models back which aliases is configuration, not code, so the same skills run unchanged wherever they are deployed.
+
+## Dependencies
+
+Called by the [Skill Runtime](/engineering/architecture/components/skill-runtime) for a skill's model steps and by [AI Memory](/engineering/architecture/components/ai-memory) for embeddings. It reads provider keys from [Configuration & Secrets](/engineering/architecture/components/configuration-secrets), keeps its cost ledger and cache on the [Data Adapter](/engineering/architecture/components/data-adapter), records every call to the [AI Auditor](/engineering/architecture/components/ai-auditor), and emits telemetry to [Observability](/engineering/architecture/components/observability). The governance wrapper is NXT's; the model-serving runtime and provider proxies beneath it are adopted.
