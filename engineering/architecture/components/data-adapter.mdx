@@ -37,4 +37,4 @@ The connection pool is per process and shared. Each request borrows a session fo
 
 ## Dependencies
 
-Sits at the base, so the rest of the foundation — [Configuration & Secrets](/engineering/architecture/components/configuration-secrets), [Eventing](/engineering/architecture/components/eventing), [Identity & Access](/engineering/architecture/components/identity-access) — builds on it. It emits telemetry to the cross-cutting [Observability](/engineering/architecture/components/observability) and runs in-process inside the API and workers.
+Sits at the base, so the rest of the foundation — [Configuration & Secrets](/engineering/architecture/components/configuration-secrets), [Eventing](/engineering/architecture/components/eventing), [IAM](/engineering/architecture/components/iam) — builds on it. It emits telemetry to the cross-cutting [Observability](/engineering/architecture/components/observability) and runs in-process inside the API and workers.

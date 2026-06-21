@@ -5,27 +5,44 @@ description: "Tier 1 · the internal event backbone with a transactional outbox.
 icon: "tower-broadcast"
 ---
 
+import { Verified } from "/snippets/verified.mdx";
+
+<Verified on="2026-06-21" />
+
 <Note>
   **Tier 1 · Foundation.** Part of the [NXT Core architecture](/engineering/architecture).
 </Note>
 
-Eventing is the platform's internal event backbone. When a component changes state, it publishes an event so the rest of the platform can react — and the event is delivered only once the change commits. It carries events between components inside the platform; external delivery rides the Integration Fabric, and the durable record of decisions lives in the AI Auditor.
+Eventing is the platform's internal **event backbone**. When one component changes something, it announces that change as an event, and any other component can subscribe to react — without the two ever calling each other directly. This keeps the platform decoupled: a component does its job and emits *what happened*; whoever cares responds in their own time. It carries events **between components inside the platform** — it is plumbing, not a place where meaning is decided. Each consumer owns what an event means to it.
 
-## Contract
+## The guarantee: events never disagree with reality
 
-| Method | What it does |
-| --- | --- |
-| `publish` | Emits an event as part of the current change; delivered once that change commits |
-| `subscribe` | Registers to receive events of a type, with automatic retry and de-duplication |
+The hard part of any event system is keeping the event and the state change consistent. A component usually does two things at once — it updates its data *and* wants to announce that update. If those happen as two separate steps, a crash in between leaves the system lying: the data changed but no one was told, or an event fired for a change that was rolled back. At the platform's scale of audit and learning, either is corrupting.
 
-## State & storage
+Eventing removes the gap with a **transactional outbox**. The event is written into the database **in the same transaction** as the state change, into an outbox. So the two commit together or not at all — there is no in-between. A background relay then reads the outbox and delivers each event onward.
 
-Owns the **outbox** — events waiting to be delivered — and the bookkeeping of what has published. Because each event is written in the same transaction as the state change, it publishes exactly when that change commits, so events stay consistent with state. Every event carries the request's workspace and correlation id.
+<Note>
+  **The plain version.** Think of the outbox in an email client: you write the message as you finish your work and drop it in the outbox in the same breath, and it gets sent reliably a moment later. If your work is undone, the message never leaves. Eventing does exactly this for every state change — so an event exists *if and only if* the change that caused it really happened.
+</Note>
+
+## Publishing and subscribing
+
+A component **publishes** an event as part of the change it is already making — it does not manage delivery, retries, or who is listening; it just records that something happened, and the commit makes it real. Other components **subscribe** to the kinds of events they care about and react when they arrive. New reactions can be added by subscribing, without touching the component that emits the event — which is what lets the platform grow without the pieces growing tangled.
+
+## Delivery you can rely on
+
+- **At-least-once delivery.** The relay keeps trying until an event is delivered, so nothing is silently lost; consumers are **idempotent** — they recognise an event they have already handled and skip it — so a retry is harmless.
+- **Carries its context.** Every event travels with the request's `workspace_id` and `correlation_id`, so a reaction stays scoped to the right tenant and can be traced back to the request that triggered it.
+- **Order preserved.** Events are delivered in the order they were committed, so consumers see the story of a change in sequence.
+
+## Portable across customer environments
+
+The part that carries the guarantee — the outbox — lives in the platform's own database, which is present in every deployment, so the consistency promise holds the same everywhere. The delivery transport beneath it is an adopted durable message stream that fits the environment. The guarantee is ours and constant; the transport is replaceable.
 
 ## Dependencies
 
-Builds on [Data Adapter](/engineering/architecture/components/data-adapter) (Tier 0) and emits telemetry to the cross-cutting [Observability](/engineering/architecture/components/observability). Eventing transports events; consumers (the AI Auditor, evaluation jobs) own what they mean.
+Builds on [Data Adapter](/engineering/architecture/components/data-adapter) (Tier 0): the outbox is a table written inside the caller's transaction, which is exactly what makes the commit atomic. It emits telemetry to the cross-cutting [Observability](/engineering/architecture/components/observability). It depends on nothing above it — components publish and subscribe through it without knowing about each other.
 
 ## Infra & deployment
 
-An event bus / durable message stream plus the outbox table (via Data Adapter). `publish` is an in-process library so it commits inside the caller's transaction, and a small background relay drains the outbox and handles retries.
+A durable message stream for delivery, plus the outbox table (via Data Adapter) for the atomic commit. `publish` runs as an in-process library so it commits inside the caller's transaction, and a small background relay drains the outbox and handles delivery and retries — so the fast path stays simple and the reliable delivery happens just behind it.

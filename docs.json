@@ -147,7 +147,7 @@
               "engineering/architecture/index",
               "engineering/architecture/nxt-core-architecture",
               "engineering/architecture/technical-architecture",
-              "engineering/architecture/components/identity-access",
+              "engineering/architecture/components/iam",
               "engineering/architecture/components/configuration-secrets",
               "engineering/architecture/components/eventing",
               "engineering/architecture/components/data-adapter",

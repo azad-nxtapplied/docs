@@ -36,7 +36,7 @@ The platform deploys self-contained into each customer's environment, and Observ
 Two ids make a distributed request followable, and both ride every signal:
 
 - **`correlation_id`** — minted at the edge (the [Platform API](/engineering/architecture#band-2--ai-suites)) when a request first arrives, then carried through the whole journey: across `await` boundaries, into background work via [Eventing](/engineering/architecture/components/eventing), and into the skill runtime. One id ties the inbound API call, the worker job it spawned, and the model call inside a skill into a single trace.
-- **`workspace_id`** — the tenant scope ([resolved in Identity & Access](/engineering/architecture/components/identity-access)), tagged on every log, metric, and trace so health and cost can be sliced per workspace.
+- **`workspace_id`** — the tenant scope ([resolved in IAM](/engineering/architecture/components/iam)), tagged on every log, metric, and trace so health and cost can be sliced per workspace.
 
 Propagation is automatic: a context-propagation middleware reads or mints the ids on each request and stores them in a context variable, and the logging, metrics, and tracing layers pick them up — so an engineer never threads them by hand, and a worker started from a queue message inherits the same ids as the API call that enqueued it.
 

@@ -118,9 +118,9 @@ NXT Core is an AI-native platform that runs inside the customer's environment. I
           <div className="glabel">FOUNDATION PLANE · PLATFORM CORE — layered: each tier builds on the tiers below ↓</div>
           <div className="stack">
 
-            <div className="glabel" style={{ marginBottom: "4px" }}>TIER 2 · IDENTITY &amp; ACCESS (IAM)</div>
+            <div className="glabel" style={{ marginBottom: "4px" }}>TIER 2 · IAM (IDENTITY &amp; ACCESS MANAGEMENT)</div>
             <div className="row">
-              <a className="card" href="/engineering/architecture/components/identity-access" data-tip="One bounded context for identity, tenancy, and authorization. Manages users, sessions, API keys, and service/agent identities; the Org → Workspace → Membership hierarchy with workspace isolation; and RBAC roles with permission checks. Handles coarse capability; the Policy Gate handles per-action decisions.">Identity &amp; Access</a>
+              <a className="card" href="/engineering/architecture/components/iam" data-tip="One bounded context for identity, tenancy, and authorization. Manages users, sessions, API keys, and service/agent identities; the Org → Workspace → Membership hierarchy with workspace isolation; and RBAC roles with permission checks. Handles coarse capability; the Policy Gate handles per-action decisions.">IAM</a>
             </div>
 
             <div className="glabel" style={{ margin: "10px 0 4px" }}>TIER 1 · PLATFORM PRIMITIVES</div>
@@ -219,7 +219,7 @@ The layered foundation. Each component below has its own contract page.
 
 | Tier | Component | Responsibility |
 | --- | --- | --- |
-| 2 | **[Identity & Access](/engineering/architecture/components/identity-access)** | Identity, tenancy, and coarse authorization in one bounded context — who, where, and what they may do. |
+| 2 | **[IAM (Identity & Access Management)](/engineering/architecture/components/iam)** | Identity, tenancy, and coarse authorization in one bounded context — who, where, and what they may do. |
 | 1 | **[Configuration & Secrets](/engineering/architecture/components/configuration-secrets)** | Per-workspace config, feature flags, and secret bindings, synced from a secret manager. |
 | 1 | **[Eventing](/engineering/architecture/components/eventing)** | The internal event backbone — publish primitives with a transactional outbox. |
 | 0 | **[Data Adapter](/engineering/architecture/components/data-adapter)** | The shared, safe way to reach the DB (system of record) and cache (ephemeral). |
@@ -241,6 +241,6 @@ The layered foundation. Each component below has its own contract page.
     A thin shared kernel holds universal primitives (IDs, base Event). Each component owns and exports its own contract DTOs; subtypes resolve via a `type` discriminator on the wire (CloudEvents-style).
   </Accordion>
   <Accordion title="Two complementary gates" icon="key">
-    Identity & Access gates _capability_ (do you have a licence). The Policy Gate gates the _specific action_ at execution time. Together they cover both questions.
+    IAM gates _capability_ (do you have a licence). The Policy Gate gates the _specific action_ at execution time. Together they cover both questions.
   </Accordion>
 </AccordionGroup>

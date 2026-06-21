@@ -1,0 +1,96 @@
+---
+title: "IAM (Identity & Access Management)"
+sidebarTitle: "IAM"
+description: "Tier 2 · IAM — identity, tenancy, and coarse authorization in one bounded context."
+icon: "id-card"
+---
+
+import { Verified } from "/snippets/verified.mdx";
+
+<Verified on="2026-06-21" />
+
+<Note>
+  **Tier 2 · Foundation** — the top of the foundation. Part of the [NXT Core architecture](/engineering/architecture).
+</Note>
+
+IAM is the platform's one place for **identity, tenancy, and authorization** — it answers *who is this*, *what do they belong to*, and *what may they do*. Every request enters through it: IAM confirms the caller, resolves the workspace they are acting in, and decides whether they hold the capability they are asking for. Because it owns the workspace a request belongs to, it is the component the rest of the foundation scopes against.
+
+It is built from two halves that are kept deliberately separate:
+
+- **Authentication** — *proving who you are.* Handled by an adopted auth server (Keycloak), which also connects to the customer's own login system.
+- **Tenancy & authorization** — *what you belong to and may do.* Owned entirely by the platform, layered on top of the verified identity.
+
+The rest of this page walks through both.
+
+## Who it identifies
+
+Every action on the platform is attributed to exactly one kind of identity, so the record always shows whether a human, a service, or an AI agent did the work.
+
+| Identity | Who or what | How they appear |
+| --- | --- | --- |
+| **Human** | People working in the Workspace, Cockpit, or Admin | A logged-in session |
+| **Service** | A machine or partner system calling the platform | A scoped machine credential |
+| **Agent** | An AI actor executing a skill | A platform-issued agent identity |
+
+## Authentication
+
+**Humans** sign in one of two ways, both first-class:
+
+- **Federated** — through the customer's own identity provider (Microsoft Entra ID, or any OIDC/SAML provider). The user logs in with their existing corporate account, exactly like "Log in with Google" — their credential stays with their provider and never reaches the platform.
+- **Local account** — an email and password held by the auth server itself, for a customer with no identity provider to federate to. The password is stored only as a one-way hash, inside the customer's own instance.
+
+**Services and partners** authenticate with **scoped machine credentials**, and programmatic callers use API keys. In embedded (Way 2) use, a partner's own end users are *not* platform users — they travel as an **`on_behalf_of`** claim recorded on the action, so attribution stays exact without provisioning them as accounts.
+
+## How IAM and Keycloak divide the work
+
+Keycloak is an adopted, self-hosted auth server that runs inside the customer's instance. It carries the parts of login that are universal and not worth rebuilding — verifying credentials, the redirect dance with the customer's identity provider, and issuing a signed token that proves who the user is.
+
+Everything that is specific to *our* platform stays in the IAM component. The split is clean:
+
+| Concern | Owned by | Why |
+| --- | --- | --- |
+| Verifying credentials, federation to the customer's IdP, issuing the login token | **Keycloak** | Standard, protocol-heavy, and identical for every customer — adopt, don't build |
+| Tenancy (org, workspace, membership) and roles | **IAM** | Business data: edited in Admin, versioned, exportable, tied to cases and billing |
+| The capability check (`may this principal do this here?`) | **IAM** | A fast, local decision tied to our own domain model |
+| Service and agent identities, `on_behalf_of` attribution | **IAM** | Platform-specific concepts Keycloak has no notion of |
+
+The link between the two is a single stable **identity id**: Keycloak proves the user and stamps that id into the token; IAM takes the verified id and resolves *our* world from it — which workspaces the user belongs to, with what role, and therefore what they may do. So a login flows through in two moves: **Keycloak says "this is really user X," then IAM says "user X is an approver in workspace Y, and yes, they may do this."**
+
+Keeping tenancy and authorization out of Keycloak is deliberate: it keeps our access model in our own domain (and our own database, managed through Admin), keeps authorization checks fast and local on every request, and keeps Keycloak swappable — it is the authentication engine, not the source of truth for who-may-do-what.
+
+## Tenancy
+
+IAM holds the tenancy hierarchy and the role each membership carries:
+
+- An **Org** is a customer account inside the instance.
+- A **Workspace** is an isolated tenant within that org — a team, a business unit, or (for a partner deployment) one of the partner's downstream customers. Work, data, and configuration are scoped to a workspace.
+- A **Membership** ties a principal to a workspace and carries their **role** there.
+
+IAM **defines the `workspace_id`** that travels with every request and that the lower tiers scope on — which is why it sits at the top of the foundation. Isolation is strict: a **machine credential is bound to exactly one workspace** and cannot address another. This is what makes one shared platform safe across many tenants, whether those are a customer's own teams or a partner's downstream customers.
+
+## Authorization
+
+IAM answers the **capability** question: *may this principal use this capability in this workspace?* — a fast allow/deny backed by the principal's role. Because the role lives on the membership, the check is a local lookup on the request's hot path, with no call out to another system.
+
+The platform's roles are a fixed, readable set:
+
+| Role | What it can do |
+| --- | --- |
+| **Operator** | Does the work — triages and handles cases in the Workspace |
+| **Reviewer** | Reviews AI proposals before they are sent or committed |
+| **Approver** | Signs off where policy requires a human approval |
+| **Admin** | Configures the workspace — users, policy values, autonomy tiers — in Admin |
+| **Auditor** | Read-only access to the record and audit exports |
+| **Partner** | A Way-2 partner system's service identity, for embedded use |
+
+## Portable across customer environments
+
+The platform deploys self-contained into each customer's environment, and IAM federates to **whatever identity provider that environment already runs** — Entra ID first, any OIDC/SAML provider in general — through the adopted Keycloak broker, with local accounts available where there is no IdP. Identity binds to the customer's directory; the platform consumes it the same way everywhere, so onboarding a new customer is configuration, not new code.
+
+## Dependencies
+
+Builds on [Data Adapter](/engineering/architecture/components/data-adapter) (Tier 0) for storing accounts, tenancy, and roles; reads signing keys and IdP configuration from [Configuration & Secrets](/engineering/architecture/components/configuration-secrets) (Tier 1); publishes identity events through [Eventing](/engineering/architecture/components/eventing) (Tier 1); and emits telemetry to the cross-cutting [Observability](/engineering/architecture/components/observability). For federated login, the interactive redirect and token exchange ride the Integration Fabric.
+
+## Infra & deployment
+
+A relational DB (accounts, tenancy, roles) through Data Adapter, a cache for hot session, token, and permission lookups and the revocation list, and the self-hosted Keycloak broker plus the customer's external IdP for federation. IAM runs as an in-process library, because confirming the caller and checking capability happen on every request — so they stay fast and local.
