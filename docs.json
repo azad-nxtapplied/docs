@@ -145,8 +145,6 @@
             "group": "Architecture",
             "pages": [
               "engineering/architecture/index",
-              "engineering/architecture/nxt-core-architecture",
-              "engineering/architecture/technical-architecture",
               {
                 "group": "Kernel (Band 1)",
                 "pages": [
@@ -170,8 +168,7 @@
                   "engineering/architecture/components/data-adapter",
                   "engineering/architecture/components/observability"
                 ]
-              },
-              "engineering/architecture/data-models"
+              }
             ]
           },
           {

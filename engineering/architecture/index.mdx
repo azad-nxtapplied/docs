@@ -1,12 +1,11 @@
 ---
 title: "Architecture"
-description: "The NXT Core platform — bands, suites, kernel, and the layered foundation, with the responsibility of each component."
-mode: "wide"
+description: "The NXT Core platform — the bands and the Foundation, how it deploys, governs, and improves."
 ---
 
 NXT Core is an AI-native platform that runs inside the customer's environment. It is organized into four **bands** — from the customer-facing playbooks at the top down to the AI kernel — all resting on a shared **Foundation** (Platform Core). The bands hold the AI-specific machinery; the Foundation is the generic plumbing that every band uses. Each band builds on the bands below it, and everything builds on the Foundation.
 
-**Hover any service** in the diagram for a quick summary. The **foundation components** (Tiers 0–2, marked ↗) open their own contract page. Full written descriptions follow below the diagram.
+**Hover any box** for a quick summary; the **kernel and foundation boxes** (marked ↗) open their own page. The sections below explain how the pieces fit together, deploy, and improve.
 
 <div className="nxt-arch">
   <div className="frame">
@@ -148,99 +147,54 @@ NXT Core is an AI-native platform that runs inside the customer's environment. I
   </div>
 </div>
 
-## Components
+## From positioning to architecture
 
-What each service does and the responsibilities it owns.
+NXT is the AI Operations Company: it makes AI work in regulated industries — governed, attestable, and improving every cycle. Each promise is an engineering requirement, and the architecture is the minimal structure that satisfies all of them at once:
 
-### Band 4 · Deployment
+- **Attestable** → nothing happens without producing its own record.
+- **Governed** → the customer's policies are executable gates, and autonomy is an earned, reversible state.
+- **Getting better every cycle** → every change is measured against reference data before release, and corrections flow back as validated improvements.
+- **Proven playbooks** → process knowledge is a versioned, testable, deployable artifact, not project code.
+- **One governance for two solution kinds** → an embedded API call is governed exactly like a case on a clerk's screen — same ledger, same gates, same evidence.
+- **Your environment, your systems** → the platform deploys self-contained into the customer's perimeter and treats their systems as the system of record.
 
-| Component | Responsibility |
-| --- | --- |
-| **Configuration** | Holds each customer's workspace settings and secret bindings — connector credentials, taxonomy, and automation seeds. Pure data, synced from a secret manager. |
-| **Customer Components** | The customer-owned systems the platform connects to (mailboxes, ERPs, identity providers). The platform reaches them through the Integration Fabric. |
+The four bands and the Foundation beneath them are what those six requirements demand — no more, no less.
 
-### Band 3 · AI-native playbooks
+## How the layers relate
 
-Declarative configuration on top of the kernel: each playbook is an intent taxonomy, autonomy ceilings (L0–L3), risk hardstops, and a skill list.
+The platform is a stack of dependency layers whose dependencies only ever point **downward** — each layer builds on what is beneath it, never sideways into another vertical and never up. From the bottom: the generic **Foundation** carries the plumbing every layer uses; the **Kernel** adds the AI guarantees and machinery, identical in every deployment; the **AI Suites** assemble the kernel into the two ways of working behind one Platform API; the **Playbooks** band is where each industry lives, as versioned, release-gated configuration; and **Deployment** is the only layer that knows the individual customer.
 
-| Component | Responsibility |
-| --- | --- |
-| **Customer Servicing** | The first playbook: handles complaints and service requests with graduated autonomy. |
-| **Claim Management** | Handles claims intake and resolution on the shared Case Operations services and the kernel. |
-| **Founder Finance** | Runs founder finance operations on the same primitives. |
-| **Embedded AI Components** | Reusable AI components exposed via Service Contract and SDKs. Planned for a future release. |
+The boundary between the bottom two bands is the sharp one: remove a kernel element and a *guarantee* breaks; remove a suite element and a *way of working* breaks. Industry language first appears in the Playbooks band, and the customer first appears in Deployment — so everything below stays standard, certifiable, and identical across deployments.
 
-### Band 2 · AI suites
+## Skills and components
 
-| Component | Responsibility |
-| --- | --- |
-| **NXT Workspace** | The operator surface — inbox, case detail, and gate-review screens. A React app over the Platform API. |
-| **NXT Cockpit** | Monitoring and metrics — throughput, autonomy mix, and escalation rate. Reads the audit and evaluation streams. |
-| **NXT Admin** | Configuration and governance — manages autonomy ceilings and approves autonomy promotions. Gated by RBAC. |
-| **Platform API** | The single typed boundary the Suites call. A REST surface over Band-2 services; every call carries tenant and correlation context. |
-| **Agent Case Framework** | Owns the generic case lifecycle and park/resume protocol, and is the single writer of case status. |
-| **Case Domain Memory** | Holds the case-scoped record — classification, entities, signals, comms thread, parked state. A case-shaped view over AI Memory. |
-| **Case Execution Library** | A catalog of deterministic, idempotent, audited executors a case invokes once authorized (send email, route, close). |
+Two terms recur throughout. A **Skill** is a capability given to the AI — a taught, versioned unit of work (classify a complaint, check billing completeness, draft a response). A **Component** is a solution built for a customer that runs on the platform — composed of skills, policies, and configuration. Components are built from skills; playbooks define and validate both.
 
-### Band 1 · Kernel
+## How it deploys and operates
 
-**Execution plane**
+**One instance per customer.** The whole stack runs as a single self-contained instance inside the customer's environment, on their infrastructure, federated to their identity, storing to their object store. Instances are reproducible from configuration — one platform, many instances, never forks.
 
-| Component | Responsibility |
-| --- | --- |
-| **Model Gateway** | The single entry point to every LLM (Commercial, Open-Source, BYOM) behind one unified API. Applies enablement, guardrails, smart caching, execution with retry/fallback/circuit-breaker, and cost accounting. |
-| **Skill Runtime** | Executes a single skill and emits typed artifacts. Runs are idempotent and durable — they park where the Autonomy verdict directs and resume on a human signal. |
-| **Integration Fabric** | Handles all I/O with the outside world — inbound email and webhooks, outbound sends, and the tool transport for skills. Idempotent at the message boundary. |
+**The operating split: the customer operates the system; NXT operates the AI.** The customer runs the infrastructure and first-level operations. NXT operates the quality cycle — evaluation, drift response, prompt and playbook evolution, autonomy management — from outside the perimeter, on an allow-listed stream of **quality signals only** (scores, metrics, error signatures — never business content).
 
-**Governance plane**
+**Three integration modes** govern how it coexists with what the customer already runs: NXT runs the process end to end (Way 1); the customer's own software calls governed components as steps (Way 2); or a split, where NXT runs the AI-native segment and hands deterministic tails back through the Integration Fabric.
 
-| Component | Responsibility |
-| --- | --- |
-| **Policy Gate** | Runs first. Returns a deterministic ALLOW / DENY / REQUIRE_APPROVAL for any action by evaluating versioned policy-as-code as a pure function. |
-| **Autonomy Controller** | Runs second. Calibrates how much autonomy an action gets now — `min(earned_level, policy_ceiling)` with risk hardstops — reading earned trust from the Learning Engine. |
+## Tenancy
 
-**Record plane**
+Multi-tenancy lives **inside** an instance: customers are isolated at the instance level, and **workspaces** isolate teams — or, in a partner deployment, the partner's downstream customers — within it. Every request carries a `workspace_id`, resolved by IAM and scoped by the Foundation. In a partner deployment, a machine credential is bound to exactly one workspace and cannot address another, and the partner's end users travel as recorded `on_behalf_of` claims rather than platform accounts.
 
-| Component | Responsibility |
-| --- | --- |
-| **AI Memory** | Operational recall in two tiers — Episodic (run/case history) and Knowledge/Grounding (RAG). Postgres + pgvector, hot cache in Redis. |
-| **AI Auditor** | The immutable record of why every decision happened — append-only, hash-chained audit events on the event bus. |
+## Build vs borrow
 
-**Feedback plane**
+NXT owns everything that carries the guarantees and the playbook IP — the governance semantics of the kernel elements, the playbook format, and the service and connector contracts. Everything beneath is proven open-source infrastructure, self-hosted in the customer's perimeter: PostgreSQL, Redis, Kubernetes, a Keycloak-class identity broker, an OSS LLM proxy and model-serving runtime behind the Model Gateway, pgvector behind AI Memory, the customer's own object store. The line is deliberate: **NXT builds the governance and adopts the plumbing.**
 
-| Component | Responsibility |
-| --- | --- |
-| **Evaluation Engine** | Grades decision quality from explicit signals (override, edit, reopen) and implicit signals mined from the audit stream. |
-| **Learning Engine** | Turns track record into earned trust — `earned_level` and eligibility, with operator-gated promotion. Feeds the Autonomy Controller. |
+## Key decisions
 
-### Foundation · Platform Core
+- **A modular monolith**, not microservices — one instance per customer makes per-service operational overhead a cost without a benefit.
+- **One PostgreSQL per instance**, organized by concern, with the dependency rules mirrored in the data layer.
+- **One versioned Platform API** as the single external surface — NXT's own surfaces consume the same public API, with no private backdoor.
+- **Serve-from-state** for interactive responses — results are computed behind the scenes and read back fast, rather than running a live pipeline per request.
+- **Case orchestration is the product**, so no external workflow engine is adopted; coexistence is solved by the embedded (Way 2) path instead.
+- **SaaS is deliberately not built** — the door is held open (workspace-scoped everything, instance-from-configuration, billing-grade metering), but nothing is built behind it until a product decision exists.
 
-The layered foundation. Each component below has its own contract page.
+## Vision
 
-| Tier | Component | Responsibility |
-| --- | --- | --- |
-| 2 | **[IAM (Identity & Access Management)](/engineering/architecture/components/iam)** | Identity, tenancy, and coarse authorization in one bounded context — who, where, and what they may do. |
-| 1 | **[Configuration & Secrets](/engineering/architecture/components/configuration-secrets)** | Per-workspace config, feature flags, and secret bindings, synced from a secret manager. |
-| 1 | **[Eventing](/engineering/architecture/components/eventing)** | The internal event backbone — publish primitives with a transactional outbox. |
-| 0 | **[Data Adapter](/engineering/architecture/components/data-adapter)** | The shared, safe way to reach the DB (system of record) and cache (ephemeral). |
-| — | **[Observability](/engineering/architecture/components/observability)** | Structured logging, metrics, and traces for system health (cross-cutting). |
-
-## Design principles
-
-<AccordionGroup>
-  <Accordion title="Build downward" icon="arrow-down">
-    Each tier builds only on the tiers below it, forming an acyclic dependency graph. Lower components stay mechanical — they read the `workspace_id` carried on each request, which keeps the layering clean.
-  </Accordion>
-  <Accordion title="Group by bounded context" icon="object-group">
-    Related concerns live together: Identity, Tenancy, and Authorization form IAM; Config and Secrets belong together; Observability is cross-cutting. Industry-standard groupings.
-  </Accordion>
-  <Accordion title="Tenant isolation everywhere" icon="shield">
-    Every request is scoped to its workspace by an app-level filter, backed by database row-level security, with the cache isolated by a workspace key prefix.
-  </Accordion>
-  <Accordion title="Types flow up" icon="arrow-up">
-    A thin shared kernel holds universal primitives (IDs, base Event). Each component owns and exports its own contract DTOs; subtypes resolve via a `type` discriminator on the wire (CloudEvents-style).
-  </Accordion>
-  <Accordion title="Two complementary gates" icon="key">
-    IAM gates _capability_ (do you have a licence). The Policy Gate gates the _specific action_ at execution time. Together they cover both questions.
-  </Accordion>
-</AccordionGroup>
+NXT Core is the AI Operations Platform: the governed execution layer on which AI works in regulated industries — running proven playbooks on top of existing systems, in the customer's own environment, never replacing what already works. Every decision is recorded with what the AI saw. Every change is validated before release. Every autonomy level is earned on evidence. The customer's team stays in command, the customer's accountability is answered from evidence, and every deployment makes the next one faster.
