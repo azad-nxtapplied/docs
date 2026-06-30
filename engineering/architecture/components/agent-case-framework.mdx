@@ -1,0 +1,42 @@
+---
+title: "Agent Case Framework"
+sidebarTitle: "Agent Case Framework"
+description: "Band 2 · AI Suites — the case engine: orchestrates one case across people and time."
+icon: "git-branch"
+---
+
+<Note>
+  **Band 2 · AI Suites.** Part of the [NXT Core architecture](/engineering/architecture).
+</Note>
+
+The Agent Case Framework is the **case engine** — it orchestrates one case from intake to resolution, across people and time. It is the top rung of the execution ladder (*model call → skill → case*) and the **single writer of case status**.
+
+## What it owns
+
+It owns the **case lifecycle**: typed cases with states, SLAs, and ownership; work items; exception handling; human checkpoints; and the **park/resume protocol** — the ability to stop at a gate and pick up later on a human action or an inbound event.
+
+## How it runs a case
+
+For each step, the framework:
+1. decides the **next step** and runs the right **skill** on the kernel's Skill Runtime;
+2. checks the governance verdict — the **Policy Gate** (may this happen?) and the **Autonomy Controller** (how far may it go?);
+3. then either **auto-executes** the action (through the Case Execution Library) or **parks** at a human checkpoint;
+4. and **resumes** when the human acts — advancing until the case is resolved.
+
+The case-level agent decides *what to do next*; but every skill still executes on the kernel, so nothing agentic escapes recording.
+
+## In the running example
+
+For the duplicate-charge complaint: the framework opens the case, runs the assess-billing-complaint skill, gets a *draft-only* verdict, **parks** for the operator's approval, and on approval **resumes** — triggering the reply to be sent. Throughout, it is the only writer of the case's status.
+
+## Engine and its parts
+
+The framework is the **behavior** of the case engine; its **state** is [Case Domain Memory](/engineering/architecture/components/case-domain-memory) and its **actions** are the [Case Execution Library](/engineering/architecture/components/case-execution-library). It decides and orchestrates — it does not store the record itself or perform the deterministic actions; it drives them.
+
+## Way 1 and Way 2
+
+In **Way 1** (case operations) it runs the full lifecycle with human checkpoints. In **Way 2** (embedded) it still creates a case — **headless** — so an embedded request is governed and recorded exactly like a case on a screen, just without the human-facing orchestration.
+
+## Dependencies
+
+Runs skills on the kernel's [Skill Runtime](/engineering/architecture/components/skill-runtime); checks the [Policy Gate](/engineering/architecture/components/policy-gate) and [Autonomy Controller](/engineering/architecture/components/autonomy-controller); reads and writes case state via [Case Domain Memory](/engineering/architecture/components/case-domain-memory); performs actions through the [Case Execution Library](/engineering/architecture/components/case-execution-library); records every status change in the [AI Auditor](/engineering/architecture/components/ai-auditor); and emits case events via [Eventing](/engineering/architecture/components/eventing).

@@ -1,0 +1,39 @@
+---
+title: "Case Execution Library"
+sidebarTitle: "Case Execution Library"
+description: "Band 2 · AI Suites — the deterministic, audited executors a case invokes once authorized."
+icon: "wrench"
+---
+
+<Note>
+  **Band 2 · AI Suites.** Part of the [NXT Core architecture](/engineering/architecture).
+</Note>
+
+The Case Execution Library is the catalog of **deterministic, idempotent, audited executors** a case invokes once an action has been authorized — the "hands" of case operations. Where a skill *decides or drafts* (AI), an executor *does the concrete thing*: send the email, route the case, close it.
+
+## What it owns
+
+The library is a catalog of **executors, grouped into a few families** — this is its actual contents, not illustrations. Each executor is one deterministic, idempotent action a case can invoke:
+
+| Family | Example executors (the concrete actions) |
+| --- | --- |
+| **Inbox** (intake) | `deduplicate-intake` · `classify-message` (confidence-thresholded) · `resolve-identity` · `route-on-arrival` |
+| **Communication** | `send-reply` · `acknowledge-receipt` · `track-thread` (replies thread back to the case) |
+| **Routing & assignment** | `assign-to-queue` · `assign-to-owner` · `escalate` |
+| **Case Analytics** (read-side) | volumes · cycle time · SLA adherence · automation share |
+
+Calling one twice is safe — `send-reply` invoked again still sends a single email.
+
+## Deterministic, not AI — the separation
+
+This is the line worth holding: **skills (in the kernel) decide and draft; the execution library acts.** A skill proposes the refund reply; the Communication engine *sends* it — but only once the case is authorized to act. Executors are deterministic and idempotent, so a retry never double-sends or double-closes.
+
+## How a case uses it
+
+The Agent Case Framework calls an executor **only after the action is authorized** — the governance verdict has cleared, or a human approved. The executor performs the concrete step, reaching the outside world through the Integration Fabric, and every invocation is a recorded execution.
+
+For example, in the duplicate-charge complaint: at intake the **Inbox** ran `deduplicate-intake`, `classify-message` ("billing dispute"), and `resolve-identity`; once the operator approved the reply, **Communication** ran `send-reply` and `track-thread`; and **Case Analytics** recorded the cycle time. Each was a recorded execution — and none of them *decided* anything; they carried out steps the case had already been authorized to take.
+
+## Dependencies
+
+Reaches the outside world through the [Integration Fabric](/engineering/architecture/components/integration-fabric) (mail, write-backs); records every action in the [AI Auditor](/engineering/architecture/components/ai-auditor); reads and writes case state via [Case Domain Memory](/engineering/architecture/components/case-domain-memory) and the [Data Adapter](/engineering/architecture/components/data-adapter). It is invoked by the [Agent Case Framework](/engineering/architecture/components/agent-case-framework) once an action is authorized — it never decides *whether* to act, only carries the action out.

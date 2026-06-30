@@ -1,0 +1,36 @@
+---
+title: "Case Domain Memory"
+sidebarTitle: "Case Domain Memory"
+description: "Band 2 · AI Suites — the case engine's state: the case-scoped operational record."
+icon: "folder"
+---
+
+<Note>
+  **Band 2 · AI Suites.** Part of the [NXT Core architecture](/engineering/architecture).
+</Note>
+
+Case Domain Memory is the **case engine's state** — the case-scoped operational record that answers *"where does this case stand right now?"* It is the data the [Agent Case Framework](/engineering/architecture/components/agent-case-framework) reads and updates as a case moves through its lifecycle.
+
+## What it owns
+
+For each case, it holds the operational record:
+- the **classification** and extracted **entities**,
+- the **work items, exceptions, and approvals**,
+- the **communication thread**,
+- and the **parked state** — where the case is waiting, and for what.
+
+## A case-shaped view over AI Memory
+
+This is the distinction to hold:
+- **AI Memory** (kernel) is the substrate — knowledge, the context assembled for a task, and evidence.
+- **Case Domain Memory** is the *operational state of one case* on top of it — not *what the AI knows*, but *where the case stands*.
+
+The evidence behind a decision lives in AI Memory; the case's status, thread, and parked point live here. (It's the Way-1 sibling of Component Memory: one is a case's record, the other a component's track record.)
+
+## Part of the case engine
+
+Case Domain Memory is not a standalone service — it is the **state half of the case engine**. The Agent Case Framework owns the behavior (lifecycle, park/resume) and is the single writer of case status; Case Domain Memory is the record that behavior reads and updates.
+
+## Dependencies
+
+Stored through the [Data Adapter](/engineering/architecture/components/data-adapter); views evidence and context from the kernel's [AI Memory](/engineering/architecture/components/ai-memory); and every change to it is a recorded execution in the [AI Auditor](/engineering/architecture/components/ai-auditor). It is written by the [Agent Case Framework](/engineering/architecture/components/agent-case-framework) as it advances a case.

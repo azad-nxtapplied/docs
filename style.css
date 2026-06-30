@@ -212,6 +212,9 @@ a[nav-tabs-item] {
 .nxt-arch a.card:hover::after { opacity: 1; }
 
 .nxt-arch .api {
+  position: relative;
+  display: block;
+  width: 100%;
   background: var(--accent);
   color: var(--accent-ink);
   border-radius: 9px;
@@ -220,7 +223,10 @@ a[nav-tabs-item] {
   font-weight: 600;
   letter-spacing: 0.02em;
   margin: 12px 0;
+  text-decoration: none;
 }
+.nxt-arch a.api { cursor: pointer; transition: filter 0.12s ease, box-shadow 0.12s ease; }
+.nxt-arch a.api:hover { filter: brightness(1.08); box-shadow: 0 4px 14px rgba(20, 20, 30, 0.18); }
 .nxt-arch .dashed {
   border-style: dashed;
   color: var(--muted);

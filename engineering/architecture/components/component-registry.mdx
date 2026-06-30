@@ -1,0 +1,49 @@
+---
+title: "Component Registry"
+sidebarTitle: "Component Registry"
+description: "Band 2 · AI Suites — the catalogue of callable components, their versions and entitlements."
+icon: "library"
+---
+
+import { Verified } from "/snippets/verified.mdx";
+
+<Verified on="2026-06-30" />
+
+<Note>
+  **Band 2 · AI Suites.** Part of the [NXT Core architecture](/engineering/architecture).
+</Note>
+
+The Component Registry is the **catalogue of callable components** — what is published, at which version, and who is entitled to call it. When a request names a component, the registry resolves it to a specific version and confirms the caller may use it. It is **generic machinery**: it knows nothing about claims or billing — it lists whatever the playbooks publish.
+
+## What it owns
+
+The registry owns the **catalogue entries**: each component's name, its versions, its service-contract shape, and the per-tenant **entitlements** that say who may call it. It is the source of truth for *"which components exist here, and who can use them."*
+
+## Skill, component, and domain use-case — kept separate
+
+The registry lists **components**, so it helps to be precise about the three things it sits among:
+
+| Term | What it is | Example | Where it's defined |
+| --- | --- | --- | --- |
+| **Skill** | one taught capability — the atom of AI work | `extract-invoice-fields` | inside a playbook's skill set |
+| **Component** | a callable bundle of skills + policies + config, invoked as one unit | `billing-completeness` | composed in a playbook, **published to this registry** |
+| **Domain use-case** (playbook) | the industry process that ties it all together | Claim Management (insurance), Customer Servicing (banking) | **Band 3** |
+
+Read it as a ladder: **skills are the building blocks; a component bundles them into something callable; a domain playbook (Band 3) decides which skills and components a process needs.** The registry catalogues only the middle one — components — never the domain logic itself.
+
+## What it resolves on a call
+
+When a caller asks for `billing-completeness`, the registry:
+- resolves the **name** to a specific, pinned **version**,
+- checks the caller's **entitlement** in that workspace,
+- and hands back the contract the call must satisfy.
+
+Everything domain-specific — what "complete" actually means — lives in the component's skills and policies, defined by a Band-3 playbook, not in the registry.
+
+## Generic machinery, not domain logic
+
+The registry is identical in every deployment. It has no notion of insurance or banking; it is a versioned, entitlement-aware index. The claims knowledge lives in the Claim Management playbook (Band 3); the registry merely lists the components that playbook published and governs who may call them.
+
+## Dependencies
+
+Stores the catalogue and entitlements through the [Data Adapter](/engineering/architecture/components/data-adapter), and resolves who-may-call against [IAM](/engineering/architecture/components/iam). The components it lists are defined and validated by Band-3 playbooks; the registry only catalogues them and governs access.

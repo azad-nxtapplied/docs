@@ -1,0 +1,43 @@
+---
+title: "Metering"
+sidebarTitle: "Metering"
+description: "Band 2 · AI Suites — billing-grade usage counting, the invoice basis."
+icon: "receipt"
+---
+
+import { Verified } from "/snippets/verified.mdx";
+
+<Verified on="2026-06-30" />
+
+<Note>
+  **Band 2 · AI Suites.** Part of the [NXT Core architecture](/engineering/architecture).
+</Note>
+
+Metering is the platform's **commercial meter** — billing-grade counting of how much was used, per tenant and per component. It is the basis a customer or partner is invoiced on, so it is held to a higher standard than operational metrics: it must be **exact, complete, and reconcilable**, never sampled or best-effort.
+
+## What it owns
+
+Metering owns the **usage counts and their rollups** — how many requests or cases each tenant ran, against which component and version, over a billing period. It counts at the request level and aggregates into the per-tenant, per-period totals that become invoice lines.
+
+## What it counts
+
+| Dimension | Why it matters |
+| --- | --- |
+| Per request / case | the base billable unit — one governed assessment, one count |
+| Per component (and version) | so each component's usage bills separately |
+| Per workspace / tenant | the invoice basis — in a partner deployment, a workspace is the partner's downstream customer |
+| Underlying model cost | the tokens and cost the Model Gateway captured, attributed to the tenant |
+
+It counts **case volume and embedded requests alike** — both are usage, so both are metered.
+
+## Billing-grade, by reading the ledger
+
+Metering counts off the **same execution ledger the AI Auditor trusts**, so the billing view and the audit view can never disagree — *"we billed 4,200"* and *"the audit shows 4,200"* are the same number. That shared source is what makes the meter reconcilable, which is the difference between a usage metric and an invoice.
+
+## Money, not health
+
+Metering is exact and retained because it is money. That sets it apart from [Observability](/engineering/architecture/components/observability), whose metrics are operational, sampled, and discarded on a retention window. One answers *"what will we bill?"*; the other answers *"is the system healthy?"* — different guarantees, kept separate on purpose.
+
+## Dependencies
+
+Reads usage from the execution records written by the [AI Auditor](/engineering/architecture/components/ai-auditor); stores counts and rollups through the [Data Adapter](/engineering/architecture/components/data-adapter); and scopes every count to a workspace resolved by [IAM](/engineering/architecture/components/iam). It runs largely as background rollup jobs.

@@ -1,0 +1,39 @@
+---
+title: "Component Memory"
+sidebarTitle: "Component Memory"
+description: "Band 2 · AI Suites — an embedded component's own state and history."
+icon: "box"
+---
+
+import { Verified } from "/snippets/verified.mdx";
+
+<Verified on="2026-06-30" />
+
+<Note>
+  **Band 2 · AI Suites.** Part of the [NXT Core architecture](/engineering/architecture).
+</Note>
+
+Component Memory is an embedded component's **own state and history** — what it has processed, how it has been performing, and the signals it has gathered — kept per component across all of its calls. It is the embedded counterpart to Case Domain Memory: where a case has its case-scoped record, an embedded component has this.
+
+## What it owns
+
+For each embedded component, in each workspace, Component Memory owns:
+- its **rolling state** — what it has recently processed and anything it carries between calls;
+- its **history** — the trail of what it has handled over time;
+- its **quality series** — how its accuracy and acceptance have trended;
+- the **learned signals** specific to it — corrections and outcomes tied to this component.
+
+## Per component — not per case, not the substrate
+
+This is the distinction worth holding clearly:
+- **AI Memory** (kernel) is the shared substrate — knowledge, the context assembled for a task, and evidence.
+- **Case Domain Memory** holds *one case's* operational record.
+- **Component Memory** holds *one component's* accumulated state and track record across many calls — an aggregate view neither of the others carries.
+
+## A view, not a new store
+
+Component Memory does not duplicate what the kernel already holds. The evidence and context behind any single assessment live in AI Memory; the record of what happened lives in the AI Auditor; the quality numbers come from the Evaluation and Learning Engines. Component Memory **composes those into a component-scoped, governed picture** and persists only the component's own state on top.
+
+## Dependencies
+
+Builds on the [Data Adapter](/engineering/architecture/components/data-adapter) for its own state; draws evidence and context from [AI Memory](/engineering/architecture/components/ai-memory); derives history from the [AI Auditor](/engineering/architecture/components/ai-auditor)'s ledger; and reflects the quality signals produced by the [Evaluation Engine](/engineering/architecture/components/evaluation-engine) and [Learning Engine](/engineering/architecture/components/learning-engine). Every view is scoped to a workspace by [IAM](/engineering/architecture/components/iam).

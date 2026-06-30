@@ -1,0 +1,36 @@
+---
+title: "Platform API & SDKs"
+sidebarTitle: "Platform API & SDKs"
+description: "Band 2 · AI Suites — the single governed surface every consumer calls."
+icon: "plug"
+---
+
+<Note>
+  **Band 2 · AI Suites.** Part of the [NXT Core architecture](/engineering/architecture).
+</Note>
+
+The Platform API is the **single surface** through which everything the platform can do is reached. Every consumer — NXT's own Workspace, Cockpit, and Admin, and the customer's own software — calls this one API; nothing reaches the services, the kernel, or the Foundation any other way. The SDKs are typed clients generated from it, so calling the API and using an SDK are the same door.
+
+## What it owns
+
+The API owns the **contract**: a versioned, documented set of endpoints over the Band-2 services, grouped by resource — cases, work items, approvals, exceptions, policies, autonomy, evaluations, knowledge, documents, communications, embedded services, and admin. It carries the request's tenant and correlation context inward, and it is where authentication and coarse authorization are applied before anything runs.
+
+## One surface, dogfooded
+
+NXT's own apps consume **the same public API** a partner does — there is no private backdoor. The rule is deliberate: if the Workspace can do its job on the public contract, a customer's software can too. One surface means one contract to version, one place to authorize, and one audit of access.
+
+## SDKs generated from it
+
+The TypeScript and Python SDKs are **generated from the API's definition**, so they never drift from the contract. An SDK is an ergonomic, typed client that calls the same endpoints underneath — which is why "Platform API + SDKs" is one surface, not two. A consumer simply chooses raw REST or the SDK; both hit the same door.
+
+## The embedded call shape
+
+For embedded use, the API exposes a standard shape — **submit → assess → result** — where the result always carries an explanation, a confidence, and an evidence link. It is idempotent and asynchronous-first, with a synchronous convenience wrapper in the SDK. Every such request creates a case and produces executions, so an embedded call is governed exactly like work done on a screen.
+
+## One door, varying depth
+
+Every call enters here, but it does not traverse every layer below it. The API reaches **only as deep as the operation needs**: authentication resolves against IAM, a configuration read hits Configuration & Secrets, a full case runs through the Band-2 services into the kernel. The single door is the API; the dependency stack beneath decides how far each call travels.
+
+## Dependencies
+
+Sits above the Band-2 services and dispatches to them. It applies authentication and coarse authorization through [IAM](/engineering/architecture/components/iam), and carries the tenant and correlation context the Foundation and [Observability](/engineering/architecture/components/observability) rely on. Internal, platform-only routes live on a separate, internally-authenticated surface that is disabled in customer builds.

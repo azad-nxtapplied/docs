@@ -146,6 +146,18 @@
             "pages": [
               "engineering/architecture/index",
               {
+                "group": "Suites (Band 2)",
+                "pages": [
+                  "engineering/architecture/components/platform-api",
+                  "engineering/architecture/components/agent-case-framework",
+                  "engineering/architecture/components/case-domain-memory",
+                  "engineering/architecture/components/case-execution-library",
+                  "engineering/architecture/components/component-registry",
+                  "engineering/architecture/components/component-memory",
+                  "engineering/architecture/components/metering"
+                ]
+              },
+              {
                 "group": "Kernel (Band 1)",
                 "pages": [
                   "engineering/architecture/components/model-gateway",

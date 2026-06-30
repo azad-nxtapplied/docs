@@ -3,6 +3,10 @@ title: "Architecture"
 description: "The NXT Core platform — the bands and the Foundation, how it deploys, governs, and improves."
 ---
 
+<Note>
+  💬 **Comments & queries** — leave them in the [shared discussion doc](https://docs.google.com/document/d/10pOFmT-B0mhSt2Gqx-lDV1HC1xsu8NvtOjXANO0Jsz0/edit?usp=sharing).
+</Note>
+
 NXT Core is an AI-native platform that runs inside the customer's environment. It is organized into four **bands** — from the customer-facing playbooks at the top down to the AI kernel — all resting on a shared **Foundation** (Platform Core). The bands hold the AI-specific machinery; the Foundation is the generic plumbing that every band uses. Each band builds on the bands below it, and everything builds on the Foundation.
 
 **Hover any box** for a quick summary; the **kernel and foundation boxes** (marked ↗) open their own page. The sections below explain how the pieces fit together, deploy, and improve.
@@ -42,30 +46,40 @@ NXT Core is an AI-native platform that runs inside the customer's environment. I
     {/* BAND 2 */}
     <div className="band">
       <div className="blabel">BAND 2 · AI SUITES</div>
+
+      <div className="glabel">CONSUMERS · the apps on the API</div>
       <div className="row">
-        <div className="card" data-tip="The operator surface — inbox, case detail, and gate-review screens (review-and-send, confirm-resolve). A React app over the Platform API.">NXT Workspace</div>
-        <div className="card" data-tip="Monitoring and metrics — throughput, autonomy mix, and escalation rate. Reads the audit and evaluation streams.">NXT Cockpit</div>
-        <div className="card" data-tip="Configuration and governance — manage autonomy ceilings and approve autonomy promotions. Writes policy and playbook config, gated by RBAC.">NXT Admin</div>
+        <div className="card" data-tip="Operator surface — human in the loop. Inbox, case detail (the AI's proposal beside its evidence), and gate-review screens. A first-party app over the Platform API.">NXT Workspace</div>
+        <div className="card" data-tip="Supervisor surface — human on the loop. Quality scorecards, sampling of completed work, and where autonomy promotions are decided.">NXT Cockpit</div>
+        <div className="card" data-tip="Customer admin — users and roles, policy values, autonomy ceilings, connector credentials. Writes Band-4 configuration, gated by RBAC.">NXT Admin</div>
       </div>
-      <div className="api" data-tip="The single typed boundary the Suites call. A REST surface over Band-2 services; every call carries tenant and correlation ids from Platform Core.">Platform API</div>
+
+      <a className="api" href="/engineering/architecture/components/platform-api" data-tip="The single governed surface every consumer calls. Versioned REST with generated TS/Python SDKs; the embedded call shape (submit → assess → result, with explanation, confidence, and evidence) is just this API. Every call carries tenant and correlation ids.">Platform API + SDKs ↗</a>
+
+      <div className="glabel" style={{ margin: "12px 0 4px" }}>SERVICES</div>
       <div className="row">
-        <div className="col">
-          <div className="glabel">WAY 1 · CASE OPERATIONS</div>
+        <div className="col" style={{ flex: 2, minWidth: "320px" }}>
+          <div className="glabel">CASE ENGINE</div>
           <div className="row">
-            <div className="card" data-tip="Owns the generic case lifecycle and park/resume protocol, and is the single writer of case status. Runs a skill, asks the Autonomy Controller, then auto-executes or parks at a gate and resumes on human action.">Agent Case Framework</div>
-            <div className="card" data-tip="Holds the case-scoped record — classification, entities, signals, comms thread, and parked state. A case-shaped view over AI Memory.">Case Domain Memory</div>
-            <div className="card" data-tip="A catalog of deterministic, idempotent, audited executors a case invokes once authorized — send email, route, close. Calls the Integration Fabric for I/O.">Case Execution Library</div>
+            <a className="card" href="/engineering/architecture/components/agent-case-framework" data-tip="The case engine — orchestrates one case across people and time: lifecycle, park/resume, and the single writer of case status. Runs skills on the kernel, checks the governance verdict, then auto-executes or parks at a human checkpoint.">Agent Case Framework</a>
+          </div>
+          <div className="row">
+            <a className="card" href="/engineering/architecture/components/case-domain-memory" data-tip="The case engine's state — the case-scoped record: classification, entities, comms thread, and parked state. A case-shaped view over the kernel's AI Memory.">Case Domain Memory</a>
+            <a className="card" href="/engineering/architecture/components/case-execution-library" data-tip="The case engine's actions — deterministic, idempotent executors a case invokes once authorized: the Inbox, Communication engine, Routing, and Case Analytics. The 'hands' that act; skills decide.">Case Execution Library</a>
           </div>
         </div>
         <div className="col">
-          <div className="glabel">WAY 2 · EMBEDDED AI COMPONENTS</div>
+          <div className="glabel">COMPONENT REGISTRY</div>
           <div className="row">
-            <div className="card" data-tip="Registry of reusable embeddable AI components.">Component Registry</div>
-            <div className="card" data-tip="Memory scoped to embedded components.">Component Memory</div>
-            <div className="card" data-tip="Service contracts and SDKs for embedding components into customer apps.">Service Contract and SDKs</div>
-            <div className="card" data-tip="Usage metering and billing for embedded components.">Metering</div>
+            <a className="card" href="/engineering/architecture/components/component-registry" data-tip="Catalogue of published, embeddable components with their versions and entitlements — resolves which component a caller asked for and whether they may use it. Generic machinery; the domain logic lives in Band-3 playbooks.">Component Registry</a>
+          </div>
+          <div className="row">
+            <a className="card" href="/engineering/architecture/components/component-memory" data-tip="An embedded component's own state and history — what it has processed and its rolling quality series, per component. Distinct from AI Memory, which holds knowledge and evidence.">Component Memory</a>
           </div>
         </div>
+      </div>
+      <div className="row" style={{ marginTop: "10px" }}>
+        <a className="card" href="/engineering/architecture/components/metering" data-tip="Billing-grade usage counting, per tenant and per component, off the same execution ledger the Auditor trusts. Counts case volume and embedded requests alike — the partner's downstream invoice basis. Cross-cutting — used by both engines.">Metering</a>
       </div>
     </div>
 
