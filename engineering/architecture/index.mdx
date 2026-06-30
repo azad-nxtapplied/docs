@@ -49,9 +49,9 @@ NXT Core is an AI-native platform that runs inside the customer's environment. I
 
       <div className="glabel">CONSUMERS · the apps on the API</div>
       <div className="row">
-        <div className="card" data-tip="Operator surface — human in the loop. Inbox, case detail (the AI's proposal beside its evidence), and gate-review screens. A first-party app over the Platform API.">NXT Workspace</div>
-        <div className="card" data-tip="Supervisor surface — human on the loop. Quality scorecards, sampling of completed work, and where autonomy promotions are decided.">NXT Cockpit</div>
-        <div className="card" data-tip="Customer admin — users and roles, policy values, autonomy ceilings, connector credentials. Writes Band-4 configuration, gated by RBAC.">NXT Admin</div>
+        <a className="card" href="/engineering/architecture/components/nxt-workspace" data-tip="Operator surface — human in the loop. Inbox, case detail (the AI's proposal beside its evidence), and gate-review screens. A first-party app over the Platform API.">NXT Workspace</a>
+        <a className="card" href="/engineering/architecture/components/nxt-cockpit" data-tip="Oversight surface — human on the loop. The three jobs: prove quality (scorecards, drift), govern (autonomy ladder, promotion gates, governed events), and improve (the learning loop).">NXT Cockpit</a>
+        <a className="card" href="/engineering/architecture/components/nxt-admin" data-tip="Customer admin — users and roles, policy values, autonomy ceilings, connector credentials. Writes Band-4 configuration, gated by RBAC.">NXT Admin</a>
       </div>
 
       <a className="api" href="/engineering/architecture/components/platform-api" data-tip="The single governed surface every consumer calls. Versioned REST with generated TS/Python SDKs; the embedded call shape (submit → assess → result, with explanation, confidence, and evidence) is just this API. Every call carries tenant and correlation ids.">Platform API + SDKs ↗</a>

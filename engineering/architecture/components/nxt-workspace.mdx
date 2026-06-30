@@ -1,0 +1,34 @@
+---
+title: "NXT Workspace"
+sidebarTitle: "NXT Workspace"
+description: "Band 2 · AI Suites — the operator surface: humans in the loop do the work alongside the AI."
+icon: "inbox"
+---
+
+<Note>
+  **Band 2 · AI Suites.** Part of the [NXT Core architecture](/engineering/architecture).
+</Note>
+
+NXT Workspace is the **operator surface** — for humans *in* the loop. It is where people do the work alongside the AI: picking up a case, reviewing the AI's proposal beside its evidence, and approving, correcting, or overriding it.
+
+## What it shows
+
+- **Queues / inbox** — the cases waiting for a person, prioritized and routed.
+- **Case detail** — the AI's proposal with **its reasoning and the evidence beside it**, so the operator can judge it, not just trust it.
+- **Gate-review screens** — the checkpoints where a human decides: review-and-send, confirm-resolve.
+
+## Every action counts
+
+From a case, the operator can **approve, reject, correct, or override** — and every one of those is recorded, and **every correction becomes a learning signal**. The point of the Workspace is not just to close the case, but to capture the human judgment that makes the AI better next time.
+
+## In the running example
+
+For the duplicate-charge complaint: the operator opens the parked case, sees the AI's drafted refund reply with the billing statement and a confidence beside it, softens the tone, and approves. The case resumes and the reply is sent; the operator's edit flows back as a correction.
+
+## Just another consumer
+
+The Workspace is a **first-party app over the Platform API** — it has no private access. It calls the same public API a partner's software would; if it can do its job on the public contract, so can anyone.
+
+## Dependencies
+
+A consumer of the [Platform API](/engineering/architecture/components/platform-api). Through it, operator actions reach the [Agent Case Framework](/engineering/architecture/components/agent-case-framework) (to resume a parked case), and corrections become signals for the [Learning Engine](/engineering/architecture/components/learning-engine). Every action is recorded in the [AI Auditor](/engineering/architecture/components/ai-auditor).

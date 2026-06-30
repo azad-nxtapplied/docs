@@ -1,0 +1,36 @@
+---
+title: "NXT Admin"
+sidebarTitle: "NXT Admin"
+description: "Band 2 · AI Suites — the administrator surface: configure and govern the deployment."
+icon: "settings"
+---
+
+<Note>
+  **Band 2 · AI Suites.** Part of the [NXT Core architecture](/engineering/architecture).
+</Note>
+
+NXT Admin is the **administrator surface** — where a customer's administrators configure and govern their deployment. It is the user interface onto Band-4 configuration: the values and choices that make one instance *theirs*.
+
+## What it manages
+
+- **Users and roles** — who may do what (the RBAC roles).
+- **Policy values** — the thresholds and limits the Policy Gate enforces (a refund ceiling, an approval threshold).
+- **Autonomy ceilings** — the maximum tier a capability may be promoted to.
+- **Connector credentials** — the keys for the customer's systems.
+- **Branding** — the instance's look.
+
+## Configuration, governed like everything else
+
+Admin writes **Band-4 configuration**, exportable as **one reviewable bundle** — the basis of instance reproducibility and safe change. Every change an admin makes is **recorded like any other action** and **gated by RBAC**, so configuring the platform is itself governed and attestable.
+
+## In the running example
+
+Before any complaint runs, an admin sets *"refunds ≤ €25 are auto-approvable"* as a policy value and caps the billing-complaint capability's autonomy ceiling. Those settings are what the Policy Gate and Autonomy Controller later enforce on every case — and the change itself is in the record.
+
+## Where it sits with the Cockpit
+
+Admin sets the **standing configuration** (values, ceilings, credentials); the [Cockpit](/engineering/architecture/components/nxt-cockpit) makes the **evidence-based decisions** (promote a tier when quality earns it). One configures; the other governs on evidence.
+
+## Dependencies
+
+A first-party app over the [Platform API](/engineering/architecture/components/platform-api). It writes configuration to [Configuration & Secrets](/engineering/architecture/components/configuration-secrets) and the policy/autonomy settings, all scoped and authorized through [IAM](/engineering/architecture/components/iam)'s RBAC, and every change is recorded in the [AI Auditor](/engineering/architecture/components/ai-auditor).

@@ -1,0 +1,42 @@
+---
+title: "NXT Cockpit"
+sidebarTitle: "NXT Cockpit"
+description: "Band 2 · AI Suites — the oversight surface: humans on the loop watch quality and grant autonomy on evidence."
+icon: "radar"
+---
+
+<Note>
+  **Band 2 · AI Suites.** Part of the [NXT Core architecture](/engineering/architecture).
+</Note>
+
+NXT Cockpit is the **oversight surface** — for humans *on* the loop. Where the Workspace is where people do the work, the Cockpit is where a **quality owner** watches how well the AI is doing and decides, **on evidence**, when it has earned more autonomy and where it must improve. Oversight as a workflow, not a quarterly meeting.
+
+## The three jobs
+
+The Cockpit answers three questions, each its own view:
+
+| Job | Question | How |
+| --- | --- | --- |
+| **Prove it** · quality | *Is the AI good enough?* | scorecards against a golden set, live-vs-reference drift, sampled review of completed work |
+| **Run it safely** · govern | *How much may it do on its own?* | the autonomy ladder, promotion gates, an immutable log of governed events |
+| **Improve it** · learn | *Is it getting better?* | the learning loop — corrections in, gated improvements out |
+
+## Prove it — quality on evidence
+
+The scorecard grades a capability against a **golden reference set**: precision, recall, and F1, tracked weekly over time, with the **autonomy gate** drawn as a line. Beside it, **live-vs-reference drift** compares sampled live traffic to the golden set — *live 94.8% vs golden 96.2%, drift −1.4pp, within ±2pp tolerance*. And **sampled review** surfaces completed suggestions for a human to mark correct or incorrect — confirming the numbers with eyes, with reviewer-agreement tracked.
+
+## Run it safely — the autonomy ladder
+
+The **autonomy ladder** shows how far the capability is trusted to act alone (draft → review → sample → auto), tied to the quality evidence. A **promotion gate** lists the thresholds a tier change requires and **blocks** it if any is unmet — *"Recall 91.8% is below the required 0.92 — promotion blocked."* Promotions are an explicit human decision made *on the evidence shown*; a drift below the gate **auto-demotes** without waiting for anyone. Every consequential action lands in the **governed-events log** — immutable, with an evidence snapshot and a hash.
+
+## Improve it — the learning loop
+
+Reviewer corrections feed the **learning loop**: corrections collected this cycle become a better candidate — and **nothing goes live until it has passed the gate**. The Cockpit is where that loop is watched, and where the next candidate sits "in the gate."
+
+## A portfolio view
+
+Oversight spans **many workspaces** — a quality owner switches across the practices they watch, each with its own scorecard, ladder, and gate.
+
+## Dependencies
+
+A first-party app over the [Platform API](/engineering/architecture/components/platform-api). It reads the evaluation and audit streams (the [Evaluation Engine](/engineering/architecture/components/evaluation-engine) and [AI Auditor](/engineering/architecture/components/ai-auditor)), and an approved promotion here is what raises a tier in the [Autonomy Controller](/engineering/architecture/components/autonomy-controller). Read-mostly: it observes and decides; it does not do the work.

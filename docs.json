@@ -148,6 +148,9 @@
               {
                 "group": "Suites (Band 2)",
                 "pages": [
+                  "engineering/architecture/components/nxt-workspace",
+                  "engineering/architecture/components/nxt-cockpit",
+                  "engineering/architecture/components/nxt-admin",
                   "engineering/architecture/components/platform-api",
                   "engineering/architecture/components/agent-case-framework",
                   "engineering/architecture/components/case-domain-memory",
