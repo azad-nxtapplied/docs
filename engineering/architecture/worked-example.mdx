@@ -1,0 +1,203 @@
+---
+title: "Worked example · SWK"
+sidebarTitle: "Worked example (SWK)"
+description: "One customer request, traced end to end through every band — with the contracts and classes each component uses."
+---
+
+<Note>
+  This is the one **deep** page: a single request traced through every band, with concrete contracts and classes. The component pages stay conceptual; here we show the wiring.
+</Note>
+
+## The scenario
+
+**SWK** runs **customer request management** on NXT Core (Way 1 — Case Operations). A customer emails:
+
+> *"I was charged a €12 late fee but I paid on time — please reverse it."*
+
+We follow that one request from the mailbox to the reversal, naming the **band**, the **component**, and the **contract** at each step.
+
+## The cast — what's configured before any request
+
+| Band | Configured for SWK | |
+|---|---|---|
+| **Band 4 · Deployment** | the SWK **instance**: fee-reversal ceiling (`€25` auto), mailbox + billing-system credentials, autonomy tier for the fee-dispute capability = **Review (draft-only)**, branding | via **NXT Admin** |
+| **Band 3 · Playbook** | the **Customer Servicing** playbook: intent taxonomy, the skills (`classify` · `assess-fee-dispute` · `draft-reply`), golden sets, policy templates, the Workspace checkpoint | published, eval-gated |
+
+Everything below is **identical in every deployment** — only the two rows above are SWK-specific.
+
+---
+
+## 1 · Intake — the email arrives
+
+**Band 1 · Integration Fabric** pulls the mail; **Band 2 · Case Execution Library (Inbox)** dedupes, classifies, resolves identity.
+
+```python
+# kernel.integration — the connector contract
+class IngestionConnector(Protocol):
+    async def poll(self) -> list[InboundMessage]: ...
+
+# A scheduled worker tick calls poll(); the Inbox then runs:
+msg = InboundMessage(channel="email", from_="kunde@example.de", body="…€12 late fee…")
+intake = inbox.handle(msg)        # dedupe → classify → resolve identity
+# intake.classification = Classification(intent="billing.fee_dispute", confidence=0.93)
+# intake.customer_id   = "swk:cust:88421"
+```
+
+The `classify` step is a **skill** (runs on the kernel); dedupe/route are deterministic **executors**.
+
+## 2 · A case is born
+
+**Band 2 · Agent Case Framework** creates the case and is the single writer of status; **Case Domain Memory** holds the record.
+
+```python
+class Case(BaseModel):
+    id: CaseId
+    workspace_id: WorkspaceId            # "swk"  (resolved by IAM)
+    type: str = "customer_request"
+    status: Literal["open","parked","resolved"] = "open"
+    classification: Classification
+    entities: dict                       # {"fee_amount": 12.00, "currency": "EUR"}
+    parked_at: str | None = None
+
+case = framework.open_case(intake)       # status=open, single writer of status
+```
+
+> **Component vs Case:** the *capability* is `assess-fee-dispute` (a component); **`case`** is this one instance of work. One component, thousands of cases.
+
+## 3 · Run the skill, under an envelope
+
+**Band 2** asks **Band 1 · Autonomy Controller** for the envelope, then **Band 1 · Skill Runtime** executes the skill plan.
+
+```python
+# kernel.autonomy — standing question: how far may this capability go?
+envelope = autonomy.envelope_for(capability="assess-fee-dispute", workspace="swk")
+# AutonomyEnvelope(max_tier="draft", allowed_tools=["billing.read","email.draft"], spend_cap=Money("0.50"))
+
+# kernel.skill_runtime — the skill contract
+class SkillRuntime(Protocol):
+    async def run(self, plan: SkillPlan, envelope: AutonomyEnvelope) -> SkillResult: ...
+```
+
+The plan runs three governed steps, **each an Execution**:
+
+```python
+# (a) AI Memory assembles what the model may see — recorded as context_ref
+ctx = await memory.assemble(task="assess-fee-dispute",
+                            entitlements=case.entitlements)   # → Context + signed manifest
+
+# (b) Integration Fabric reads billing under a freshness contract
+class ReferenceConnector(Protocol):
+    async def get(self, entity: str, key: str) -> Versioned[T]: ...   # raises stale_reference past TTL
+billing = await fabric.reference.get("billing", case.customer_id)
+# billing.value.paid_on_time == True   (fetched_at recorded into the decision)
+
+# (c) Model Gateway call — drafts the reply, proposes the €12 reversal
+draft = await gateway.complete(alias="drafter", context=ctx, input=billing)
+```
+
+Every step is written through the **single write path**:
+
+```python
+# kernel.auditor — nothing changes state except through here
+async def record_execution(ex: Execution) -> None: ...   # append-only; sequencer hashes off the hot path
+```
+
+```sql
+-- the row each step writes
+executions(id, workspace_id, case_id, actor, kind, input_ref, output_ref,
+           policy_eval_ref, context_ref, cost, seq, prev_hash, hash, created_at)
+-- kind ∈ { context_assembly | reference_read | model_call | gate_eval | send | … }
+```
+
+## 4 · The two gates
+
+Before **any** side effect, **Band 1 · Policy Gate** (situational) and the **Autonomy Controller** (standing) must both clear.
+
+```python
+# kernel.policy — pure function: may THIS action happen now?
+class Verdict(BaseModel):
+    decision: Literal["ALLOW","DENY","REQUIRE_APPROVAL"]
+verdict = policy.evaluate(action="reverse_fee", amount=Money("12.00"), case=case)
+# €12 ≤ €25 ceiling → ALLOW
+```
+
+Policy says **ALLOW** (within the ceiling) — but the **autonomy tier is `draft`**, so the action may not run unattended. *Both must hold; one says park.*
+
+## 5 · Park for a human
+
+**Band 2 · Agent Case Framework** parks the case; **Case Domain Memory** records where and why.
+
+```python
+framework.park(case, at="approve_fee_reversal", proposal=draft)
+# case.status = "parked"; case.parked_at = "approve_fee_reversal"
+```
+
+## 6 · The operator decides
+
+**Band 2 · NXT Workspace** — human *in* the loop. The operator sees the draft + the billing evidence + confidence, edits the tone, approves.
+
+```http
+POST /v1/cases/{id}/approve        # Platform API — the one door
+  { "edits": "...", "decision": "approve" }
+```
+
+The approval **resumes** the case; the operator's edit becomes a **learning signal** (Learning Engine). Nothing here bypasses the API — the Workspace is just another consumer.
+
+## 7 · Act on the world
+
+**Band 2 · Case Execution Library** runs deterministic executors; **Band 1 · Integration Fabric** touches SWK's systems — idempotently.
+
+```python
+class HandoffConnector(Protocol):
+    async def execute(self, handoff: Idempotent[T]) -> Receipt: ...   # retry never double-acts
+
+await fabric.handoff.execute(Idempotent(key=case.id, op="reverse_fee", amount=12.00))  # → Receipt
+await comms.send_reply(case)        # idempotent email send + thread tracking
+framework.resolve(case)             # status = resolved (single writer)
+```
+
+## 8 · Record, meter, learn — automatically
+
+| Foundation / kernel | Did |
+|---|---|
+| **AI Auditor** | every step above is a hash-chained execution; the case's journey is reconstructable |
+| **Metering** | counted this case for SWK's workspace (the invoice basis), off the same ledger |
+| **Evaluation Engine** | scored the draft against the golden set |
+| **Learning Engine** | captured the operator's edit as a correction → a gated improvement candidate |
+
+## 9 · Oversight, later
+
+**Band 2 · NXT Cockpit** — human *on* the loop. This case surfaces in the sampled review; the `assess-fee-dispute` scorecard ticks up; once recall clears the gate, the quality owner **promotes** the capability `draft → auto` for ≤ €25 — and the **Autonomy Controller** raises the tier. Next time, step 5 won't park.
+
+---
+
+## Who did what — the whole cast
+
+| Band | Component | Its move in this request |
+|---|---|---|
+| **Foundation** | IAM · Data Adapter · Eventing · Config & Secrets · Observability | scoped to `swk`, stored state, carried events, served the fee ceiling, tagged telemetry |
+| **Kernel** | Integration Fabric | pulled the mail, read billing (fresh), reversed the fee, sent the reply |
+| | Skill Runtime | ran the `assess-fee-dispute` skill plan under the envelope |
+| | Model Gateway | the governed model call (assess + draft) |
+| | AI Memory | assembled + recorded the context |
+| | Policy Gate · Autonomy Controller | *may it* (ALLOW) · *how far* (draft → park) |
+| | AI Auditor | recorded every step, immutably |
+| | Evaluation · Learning | scored the draft, captured the correction |
+| **Suites** | Agent Case Framework | opened, drove, parked, resumed, resolved the case |
+| | Case Domain Memory · Case Execution Library | the case's state · its deterministic actions |
+| | NXT Workspace · NXT Cockpit · NXT Admin | the operator approved · the owner oversaw · the admin had configured |
+| | Platform API · Metering | the one door · counted the usage |
+| **Playbook (B3)** | Customer Servicing | defined *which* skills, taxonomy, checkpoints |
+| **Deployment (B4)** | SWK config | the €25 ceiling, the draft-only tier, the credentials |
+
+## The one-line shape
+
+```
+mail → Integration Fabric → Inbox(classify) → Case opened
+     → envelope(Autonomy) → Skill Runtime[ Memory · Billing read · Model Gateway ]
+     → Policy ALLOW + Autonomy draft → PARK
+     → Workspace approve → Execution Library[ reverse fee · send ] → resolved
+     → Auditor logged · Metering counted · Learning captured · Cockpit oversees
+```
+
+Every arrow crossed a recorded execution; nothing reached a model, a system, or a side effect except through the kernel — scoped, the whole way, to the SWK workspace.

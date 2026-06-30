@@ -145,6 +145,7 @@
             "group": "Architecture",
             "pages": [
               "engineering/architecture/index",
+              "engineering/architecture/worked-example",
               {
                 "group": "Suites (Band 2)",
                 "pages": [
